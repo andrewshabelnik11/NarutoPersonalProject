@@ -346,6 +346,7 @@ input.t,select.t{width:100%;padding:11px 12px;border:1.5px solid var(--line);bor
     <button class="ghost" id="continueBtn" type="button" hidden>Continue your saved life</button>
     <div id="slotList"></div>
     <button class="ghost" id="pastBtn" type="button">Past lives</button>
+    <button class="ghost" id="xferBtn" type="button">Move lives from another copy</button>
     <label class="f" for="fName">Name</label>
     <div class="f-row"><input class="t" id="fName" maxlength="24"><button class="ghost" id="rollName" type="button" style="width:auto;margin:0;padding:0 14px">Random</button></div>
     <label class="f">Gender</label>
@@ -4770,6 +4771,7 @@ function renderSlots(){ var ix = migrateSlots(), el = $('#slotList'); if(!el) re
 var sampleBackup = null;
 function sheetMenu(){ return head('Menu') + '<div class="acts">' +
   '<button class="act" type="button" data-menu="home"><b>Back to the main menu</b><small>Your life is saved. Start another life or load a different one.</small></button>' +
+  '<button class="act" type="button" data-menu="transfer"><b>Move your lives</b><small>Copy your saved and past lives to another copy of the game.</small></button>' +
   '<button class="act" type="button" data-menu="settings"><b>Settings</b><small>Mini-games, Claude-written dialogue, pop-ups and text size.</small></button>' +
   '<button class="act" type="button" data-hist><b>Past lives</b><small>Every finished life, with its timeline.</small></button>' +
   '<button class="act" type="button" data-menu="quit"><b>Quit game</b><small>Save and leave. You can close this page any time.</small></button></div>'; }
@@ -4907,6 +4909,96 @@ function orgTeam(o){ var y = year(), team = [], want = {'ANBU':['Yugao Uzuki','T
   if(team.length < 2){ var pool = CANON.filter(function(c){ return c.v === S.village && cAlive(c, y) && ['Jonin','Special Jonin','Chunin'].indexOf(cRank(c, y)) >= 0 && team.indexOf(c.n) < 0; }); shuffle(pool).slice(0, 3 - team.length).forEach(function(c){ team.push(c.n); }); }
   while(team.length < 2){ var g = chance(0.5) ? 'Male' : 'Female'; team.push(randGiven(g) + ' ' + pick(SURNAMES) + ' (' + o + ')'); }
   return team.slice(0, 3); }
+
+
+/* ================= MOVING LIVES BETWEEN COPIES OF THE GAME ================= */
+var xfer = {code:'', msg:''};
+function b64FromBytes(bytes){ var s = ''; for(var i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
+function bytesFromB64(b){ var s = atob(b), out = new Uint8Array(s.length); for(var i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
+function makeTransferCodeAsync(){
+  var json = transferJSON();
+  if(!window.CompressionStream) return Promise.resolve('NINJALIFE1:' + btoa(unescape(encodeURIComponent(json))));
+  return new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer().then(function(buf){ return 'NINJALIFE2:' + b64FromBytes(new Uint8Array(buf)); },
+    function(){ return 'NINJALIFE1:' + btoa(unescape(encodeURIComponent(json))); });
+}
+function readTransferCodeAsync(code){
+  code = String(code || '').replace(/\s+/g, '');
+  if(code.indexOf('NINJALIFE2:') === 0){
+    if(!window.DecompressionStream) return Promise.reject('This browser is too old to read that code. Try a newer browser.');
+    var bytes; try { bytes = bytesFromB64(code.slice(11)); } catch(e){ return Promise.reject('The code is incomplete or damaged. Copy the whole code and try again.'); }
+    return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text().then(function(t){ return JSON.parse(t); }, function(){ throw 'The code is incomplete. It may have been cut off while copying. Copy the whole code and try again.'; });
+  }
+  if(code.indexOf('NINJALIFE1:') === 0){ try { return Promise.resolve(JSON.parse(decodeURIComponent(escape(atob(code.slice(11)))))); } catch(e){ return Promise.reject('The code is incomplete or damaged. Copy the whole code and try again.'); } }
+  return Promise.reject(code ? 'That doesn’t look like a Ninja Life transfer code. It should start with NINJALIFE.' : 'Paste the code into the box first.');
+}
+function transferJSON(){
+  var ix = migrateSlots(), saves = {};
+  ix.list.forEach(function(s){ try { var t = localStorage.getItem(SAVE_KEY + ':' + s.id); if(t) saves[s.id] = JSON.parse(t); } catch(e){} });
+  if(S && curSlot && !saves[curSlot]) saves[curSlot] = S;
+  return JSON.stringify({app:'ninja-life', v:1, history:loadHistory(), slots:ix.list, saves:saves});
+}
+function importTransferData(data){
+  if(!data || data.app !== 'ninja-life') return 'That code isn’t from Ninja Life.';
+  var hist = loadHistory(), seen = {}, addedH = 0;
+  hist.forEach(function(l){ seen[l.name + '|' + l.age + '|' + l.cause] = 1; });
+  (data.history || []).forEach(function(l){ var k = l.name + '|' + l.age + '|' + l.cause; if(!seen[k]){ hist.push(l); seen[k] = 1; addedH++; } });
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(hist.slice(0, 200))); } catch(e){ return 'This browser ran out of storage space.'; }
+  var ix = migrateSlots(), addedS = 0;
+  (data.slots || []).forEach(function(s){ var sv = data.saves && data.saves[s.id]; if(!sv || ix.list.some(function(x){ return x.id === s.id; })) return;
+    try { localStorage.setItem(SAVE_KEY + ':' + s.id, JSON.stringify(sv)); ix.list.push(Object.assign({}, s)); addedS++; } catch(e){} });
+  slotsSave(ix);
+  return 'Imported ' + addedH + ' past li' + (addedH === 1 ? 'fe' : 'ves') + ' and ' + addedS + ' saved li' + (addedS === 1 ? 'fe' : 'ves') + '.' + (addedH + addedS === 0 ? ' You already had everything in that code.' : '');
+}
+function sheetTransfer(){
+  var h = head('Move your lives');
+  h += '<p class="k-cmd" style="margin:-6px 0 12px">Each copy of the game keeps its own lives. To move them, make a code in the copy that has them, then paste it into the other copy.</p>';
+  h += '<div class="group"><h3>1. Make a code from this copy</h3><button class="primary" type="button" data-xfer="make">Make a transfer code</button>' +
+    (xfer.busy ? '<p class="k-cmd">Making your code…</p>' : '') +
+    (xfer.code ? '<p class="k-cmd" style="margin:10px 0 4px">Your code is ' + xfer.code.length.toLocaleString() + ' characters long. Copy all of it.</p><textarea class="t" id="xferOut" rows="4" style="font-size:.72rem;width:100%">' + esc(xfer.code) + '</textarea><button class="primary" type="button" data-xfer="copy" style="margin-top:8px">Copy the code</button>' : '') + '</div>';
+  h += '<div class="group"><h3>Or use your own code word</h3><p class="k-cmd" style="margin:0 0 8px">Pick a word like kenji-life. Only you can load it: it’s saved privately to your claude.ai account, so it works between your devices on claude.ai, not with a downloaded copy.</p>' +
+    '<input class="t" id="xferWord" maxlength="30" placeholder="Your code word" value="' + esc(xfer.word || '') + '" style="width:100%">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="primary" type="button" data-xfer="saveword">Save under my word</button><button class="ghost" type="button" data-xfer="loadword" style="margin:0">Load from my word</button></div></div>';
+  h += '<div class="group"><h3>2. Paste a code from another copy</h3><textarea class="t" id="xferIn" rows="4" placeholder="Paste the transfer code here" style="font-size:.72rem;width:100%"></textarea><button class="primary" type="button" data-xfer="import" style="margin-top:8px">Import lives</button></div>';
+  if(xfer.msg) h += '<p class="' + (/^(Imported|Copied|Saved under)/.test(xfer.msg) ? 'k-good' : /^(Importing|Saving|Loading)/.test(xfer.msg) ? 'k-cmd' : 'k-bad') + '">' + esc(xfer.msg) + '</p>';
+  return h;
+}
+
+
+/* ================= YOUR OWN CODE WORD (claude.ai storage, private to your account) ================= */
+var xdbState = null;
+function xferDB(){
+  if(xdbState) return xdbState;
+  xdbState = (!window.claude || !window.claude.use) ? Promise.resolve(null) :
+    Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function(r){ var db = r[0], u = r[1]; if(!db || !u) return null; return u.id().then(function(id){ return id ? {db:db, uid:id} : null; }); }).catch(function(){ return null; });
+  return xdbState;
+}
+function cleanWord(w){ return String(w || '').trim().toLowerCase().replace(/\s+/g, '-'); }
+function wordProblem(w){ if(w.length < 3) return 'Your code word needs at least 3 characters.'; if(w.length > 30) return 'Keep your code word to 30 characters or fewer.'; if(!/^[a-z0-9-]+$/.test(w)) return 'Use only letters, numbers and dashes in your code word.'; return ''; }
+function wordDoc(d, w, part){ return d.db.collection('data/users/' + d.uid).doc('xfer-' + w + (part == null ? '' : '-' + part)); }
+function saveUnderWord(w){
+  return xferDB().then(function(d){
+    if(!d) throw 'Code words only work in the claude.ai version of the game while you’re signed in. Use the long code instead.';
+    return makeTransferCodeAsync().then(function(code){
+      var parts = []; for(var i = 0; i < code.length; i += 200000) parts.push(code.slice(i, i + 200000));
+      var chain = Promise.resolve();
+      parts.forEach(function(p, i){ chain = chain.then(function(){ return wordDoc(d, w, i).set({chunk:p}); }); });
+      return chain.then(function(){ return wordDoc(d, w).set({parts:parts.length, size:code.length, savedAt:Date.now()}); })
+        .then(function(){ return 'Saved under “' + w + '”. On any device signed in to this claude.ai account, open the game, go to ☰ → Move your lives, type ' + w + ' and tap Load.'; });
+    });
+  });
+}
+function loadFromWord(w){
+  return xferDB().then(function(d){
+    if(!d) throw 'Code words only work in the claude.ai version of the game while you’re signed in. Use the long code instead.';
+    return wordDoc(d, w).get().then(function(head){
+      if(!head.exists) throw 'Nothing is saved under “' + w + '” on this account. Check the spelling, or save it first on the other device.';
+      var n = head.data().parts || 0, got = [], chain = Promise.resolve();
+      for(var i = 0; i < n; i++) (function(i){ chain = chain.then(function(){ return wordDoc(d, w, i).get().then(function(s){ if(!s.exists) throw 'Part of that save is missing. Save it again on the other device.'; got.push(s.data().chunk); }); }); })(i);
+      return chain.then(function(){ return readTransferCodeAsync(got.join('')); }).then(importTransferData);
+    });
+  });
+}
+function xferErr(e){ return typeof e === 'string' ? e : (e && e.code === 'quota_exceeded') ? 'Your claude.ai storage for this game is full.' : (e && e.code === 'resource_exhausted') ? 'Too many tries at once. Wait a moment and try again.' : 'That didn’t work. Check your connection and try again.'; }
 
 /* ================= EXEC ================= */
 function optMatch(name){ return !!(S.pending && S.pending.options.some(function(o){ return o === '/' + name || o.indexOf('/' + name + ' ') === 0; })); }
@@ -5689,6 +5781,7 @@ function openSheet(kind, extra){
   else if(kind === 'chat') h = sheetChat();
   else if(kind === 'groupchat') h = sheetGroupChat();
   else if(kind === 'jutsu') h = sheetJutsu();
+  else if(kind === 'transfer') h = sheetTransfer();
   else if(kind === 'home') h = sheetHome();
   else if(kind === 'menu') h = sheetMenu();
   else if(kind === 'settings') h = sheetSettings();
@@ -6005,6 +6098,7 @@ function initStart(){
     if(pl){ var sv = loadSave(pl.getAttribute('data-slot-play')); if(sv){ S = normalize(sv); $('#start').hidden = true; kakashiFix(); render(); if(!S.alive) openSheet('death'); } return; }
     if(dl){ if(dl.getAttribute('data-armed')){ deleteSlot(dl.getAttribute('data-slot-del')); renderSlots(); } else { dl.setAttribute('data-armed', '1'); dl.textContent = 'Tap again to delete'; } }
   });
+  $('#xferBtn').addEventListener('click', function(){ histFromStart = true; xfer = {code:'', msg:''}; $('#start').hidden = true; openSheet('transfer'); });
   $('#pastBtn').addEventListener('click', function(){ histFromStart = true; $('#start').hidden = true; openSheet('history'); });
   $('#continueBtn').addEventListener('click', function(){ var sv = loadSave(); if(sv){ S = normalize(sv); $('#start').hidden = true; kakashiFix(); render(); } });
 }
@@ -6038,7 +6132,22 @@ function wire(){
   });
   $('#sheet').addEventListener('click', function(e){
     if(e.target.closest('[data-hist]')){ openSheet('history'); return; }
-    var mn = e.target.closest('[data-menu]'); if(mn){ var mv2 = mn.getAttribute('data-menu'); if(mv2 === 'settings'){ openSheet('settings'); return; } save(); closeSheet(); startScreen(); if(mv2 === 'quit') warn('Your life is saved. You can close this page any time.'); return; }
+    var xf = e.target.closest('[data-xfer]'); if(xf){ var xa = xf.getAttribute('data-xfer');
+      if(xa === 'make'){ xfer.busy = true; xfer.code = ''; xfer.msg = ''; openSheet('transfer');
+        makeTransferCodeAsync().then(function(c){ xfer.busy = false; xfer.code = c; if(sheetKind === 'transfer') openSheet('transfer'); }); return; }
+      if(xa === 'copy'){ var xo = $('#xferOut'), ok = false;
+        if(xo){ xo.focus(); xo.select(); try { xo.setSelectionRange(0, xo.value.length); } catch(er){} try { ok = document.execCommand('copy'); } catch(er){ ok = false; } }
+        var after = function(good){ xfer.msg = good ? 'Copied all ' + xfer.code.length.toLocaleString() + ' characters! Now open the other copy and paste it there.' : 'Your browser blocked automatic copying. The code is selected: copy it with Ctrl+C (Cmd+C on a Mac), or press and hold on a phone and choose Copy.'; var keep = xfer.code; openSheet('transfer'); var x2 = $('#xferOut'); if(x2 && !good){ x2.focus(); x2.select(); } };
+        if(ok) after(true); else { try { navigator.clipboard.writeText(xfer.code).then(function(){ after(true); }, function(){ after(false); }); } catch(er){ after(false); } }
+        return; }
+      if(xa === 'saveword' || xa === 'loadword'){ var wi = $('#xferWord'), w = cleanWord(wi ? wi.value : ''), wp = wordProblem(w); xfer.word = w; xfer.code = '';
+        if(wp){ xfer.msg = wp; openSheet('transfer'); return; }
+        xfer.msg = xa === 'saveword' ? 'Saving…' : 'Loading…'; openSheet('transfer');
+        (xa === 'saveword' ? saveUnderWord(w) : loadFromWord(w)).then(function(m){ xfer.msg = m; }, function(e){ xfer.msg = xferErr(e); }).then(function(){ renderSlots(); if(sheetKind === 'transfer') openSheet('transfer'); }); return; }
+      if(xa === 'import'){ var xi = $('#xferIn'), val = xi ? xi.value : ''; xfer.msg = 'Importing…'; openSheet('transfer');
+        readTransferCodeAsync(val).then(function(data){ xfer.msg = importTransferData(data); }, function(err){ xfer.msg = typeof err === 'string' ? err : 'The code is incomplete or damaged. Copy the whole code and try again.'; })
+          .then(function(){ xfer.code = ''; renderSlots(); openSheet('transfer'); }); return; } }
+    var mn = e.target.closest('[data-menu]'); if(mn){ var mv2 = mn.getAttribute('data-menu'); if(mv2 === 'settings'){ openSheet('settings'); return; } if(mv2 === 'transfer'){ xfer = {code:'', msg:''}; openSheet('transfer'); return; } save(); closeSheet(); startScreen(); if(mv2 === 'quit') warn('Your life is saved. You can close this page any time.'); return; }
     var sb = e.target.closest('[data-sheet-back]'); if(sb){ openSheet(sb.getAttribute('data-sheet-back')); return; }
     var ss = e.target.closest('[data-set]'); if(ss){ var key = ss.getAttribute('data-set'); S.settings = S.settings || {miniGames:true};
       if(key === 'miniGames') S.settings.miniGames = S.settings.miniGames === false; else if(key === 'ai'){ S.settings.noAI = !S.settings.noAI; sampleFn = S.settings.noAI ? null : sampleBackup; } else if(key === 'outcome') S.settings.noOutcome = !S.settings.noOutcome; else if(key.indexOf('text:') === 0){ S.settings.text = key.slice(5); applyText(); }
@@ -6060,7 +6169,7 @@ function wire(){
     var gp = e.target.closest('[data-gcpick]'); if(gp){ var gid = +gp.getAttribute('data-gcpick'), gx = gchat.ids.indexOf(gid); if(gx >= 0) gchat.ids.splice(gx, 1); else if(gchat.ids.length < 5) gchat.ids.push(gid); openSheet('groupchat'); return; }
     if(e.target.closest('[data-gcstart]')){ if(gchat.ids.length >= 2){ gchat.picking = false; gchat.log = []; openSheet('groupchat'); } return; }
     if(e.target.closest('[data-gcadd]')){ gchat.picking = true; openSheet('groupchat'); return; }
-    if(e.target === $('#sheet') || e.target.closest('[data-close]')){ if(sheetKind === 'death' && e.target === $('#sheet')) return; if(sheetKind === 'history' && S && !S.alive && !histFromStart){ openSheet('death'); return; } closeSheet(); if(histFromStart){ histFromStart = false; $('#start').hidden = false; } return; }
+    if(e.target === $('#sheet') || e.target.closest('[data-close]')){ if(sheetKind === 'death' && e.target === $('#sheet')) return; if(sheetKind === 'history' && S && !S.alive && !histFromStart){ openSheet('death'); return; } closeSheet(); if(histFromStart){ histFromStart = false; $('#start').hidden = false; renderSlots(); } return; }
     if(e.target.closest('[data-newlife]')){ startScreen(); return; }
     var tab = e.target.closest('[data-tab]'); if(tab){ openSheet(tab.getAttribute('data-tab'), tab.getAttribute('data-tab') === 'groups' ? groupV : undefined); return; }
     var card = e.target.closest('[data-card]'); if(card){ if(sheetKind !== 'card') sheetBack = sheetKind; lastCard = card.getAttribute('data-card'); openSheet('card', card.getAttribute('data-card')); return; }
