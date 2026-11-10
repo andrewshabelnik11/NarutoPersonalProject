@@ -272,6 +272,9 @@ input.t,select.t{width:100%;padding:11px 12px;border:1.5px solid var(--line);bor
 .paintbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
 .paintbtns button{border:1.5px solid var(--line);background:var(--panel);border-radius:10px;padding:10px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
 .paintbtns i{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);display:inline-block}
+.qb{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px}
+.qb button{border:1.5px solid var(--chakra);background:var(--panel);color:var(--chakra);border-radius:16px 16px 16px 4px;padding:7px 12px;font:inherit;font-size:.86rem;cursor:pointer;width:auto;margin:0}
+.qb button:hover{background:var(--chakra);color:#fff}
 .gcmsg{align-self:flex-start;max-width:88%;background:var(--panel-2);border-radius:14px;border-bottom-left-radius:4px;padding:9px 12px;font-size:.93rem;line-height:1.4}
 .gcmsg b{display:block;font-size:.78rem;color:var(--chakra);margin-bottom:2px}
 .gcface{display:inline-flex}
@@ -345,6 +348,7 @@ input.t,select.t{width:100%;padding:11px 12px;border:1.5px solid var(--line);bor
     <p class="lede">Live one life in the world of Naruto, from birth to legacy. Age up a year at a time, type commands, and see what kind of ninja you become.</p>
     <button class="ghost" id="continueBtn" type="button" hidden>Continue your saved life</button>
     <div id="slotList"></div>
+    <label class="f" for="langSel" style="margin-top:14px">Language</label><select class="t" id="langSel"><option value="en">English</option><option value="es">Español</option><option value="ja">日本語</option><option value="pt">Português</option><option value="fr">Français</option><option value="ru">Русский</option><option value="uk">Українська</option></select>
     <button class="ghost" id="pastBtn" type="button">Past lives</button>
     <button class="ghost" id="xferBtn" type="button">Move lives from another copy</button>
     <label class="f" for="fName">Name</label>
@@ -652,7 +656,7 @@ function createLife(o){
     c:{nin:0.5,tai:0.5,gen:0.5,int:0.5,str:0.5,spd:0.5,sta:0.5,seals:0.5},
     wof:50, hatred:0, rep:0, fame:0, noto:0, bounty:0, money:0, energy:1000, rank:'Child',
     missions:{D:0,C:0,B:0,A:0,S:0}, jutsu:[], people:[], nextId:1,
-    flags:{}, used:{}, job:null, biz:[], prison:0, summon:null, sage:false, curse:false, org:null,
+    flags:{kakashiFix:true}, used:{}, job:null, biz:[], prison:0, summon:null, sage:false, curse:false, org:null,
     counters:{ramen:0, gambleLost:0, bizYears:0, murders:0}, scrolls:[], timeline:[], mates:{}, look:null, custom:false, battle:null, beast:null, beastBond:0, beastCtrl:false, myJutsu:[], mini:null, myOrg:null, myWar:null, weapons:[], eyeType:null, blind:0, injuries:[], outUntil:0, mentor:null, parents:null, settings:{miniGames:true}, log:[], pending:null, gen:o.gen || 1, deathCause:null, graduatedAge:null, queue:[], props:[], market:1, home:null, face:null, clanLeader:null
   };
   // clan
@@ -2139,8 +2143,7 @@ def('talk', {cat:'People', cost:5, limit:8, desc:'Talk with someone you know, or
     }
     var p = befriend(t);
     p.bond = clamp(p.bond + rnd(3,8), 0, 100); bump('happy',1,3);
-    if(sampleFn){ say('You sat down to talk with ' + p.name + '.'); openChat(p); return; }
-    say(talkLine(p));
+    say('You sat down to talk with ' + p.name + '.'); openChat(p);
   }});
 def('spar', {cat:'People', cost:25, limit:3, desc:'Have a practice fight with anyone (non-lethal).', args:true, person:true,
   when:function(){ return S.age >= 6 || 'You’re too young.'; },
@@ -2760,10 +2763,10 @@ function recordLife(){
   } catch(e){}
 }
 function sheetHistory(){
-  var hist = loadHistory(), h = head('Past lives');
+  var hist = loadHistory(), h = head('Past lives') + (hist.length ? '<button type="button" class="ghost danger" data-hdelall style="margin:0 0 10px">Discard all past lives</button>' : '');
   if(!hist.length) return h + '<p>No finished lives yet. Each life is saved here when it ends.</p>';
-  return h + hist.map(function(l){
-    return '<div class="person"><header><b>' + esc(l.name) + '</b><small>' + esc(l.rank) + ', died at ' + l.age + '</small></header>' +
+  return h + hist.map(function(l, hi){
+    return '<div class="person"><header style="display:flex;align-items:center;gap:8px"><div style="flex:1;min-width:0"><b>' + esc(l.name) + '</b><small style="display:block">' + esc(l.rank) + ', died at ' + l.age + '</small></div><button type="button" class="ghost danger" data-hdel="' + hi + '" style="width:auto;margin:0;padding:5px 12px;font-size:.82rem">Discard</button></header>' +
       '<p style="margin:6px 0 0;font-size:.88rem">' + esc(l.village + (l.clan ? ', ' + l.clan : '') + '. Born in year ' + l.born + ' (' + l.era + '). ' + cap(l.cause || 'passed away') + '.') + '</p>' +
       '<p class="k-cmd" style="margin:4px 0 0">' + esc('Power ' + l.power + ', ' + l.missions + ' missions, ' + money(l.money) + (l.kg && l.kg.length ? ', ' + l.kg.join(', ') : '') + (l.beast ? ', ' + l.beast + ' jinchuriki' : '') + (l.gen > 1 ? ', generation ' + l.gen : '') + (l.custom ? ', custom' : '')) + '</p>' +
       '<div class="titles">' + (l.titles || []).map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('') + '</div>' + ((l.timeline && l.timeline.length) ? '<div class="tline">' + l.timeline.map(function(ev){ return '<div class="tev"><b>' + ev.age + '</b><span>' + esc(ev.text) + '</span></div>'; }).join('') + '</div>' : '') + '</div>';
@@ -3811,14 +3814,12 @@ function personPw(p){ if(p.canon != null) return cPower(CANON[p.canon], year());
 def('cast_genjutsu', {cat:'People', cost:15, limit:3, args:true, person:true, desc:'Trap someone in a genjutsu and make them answer your questions truthfully.',
   when:function(){ return genJutsuKnown() || 'You need a genjutsu that traps people, like Sharingan Genjutsu or Demonic Illusion: Tree Binding Death.'; },
   run:function(args){ var p = personByIdx(args[0]); if(!p){ openSheet('people'); return false; } if(p.pet){ warn('Animals don’t have much to tell you.'); return false; }
-    if(!sampleFn){ warn('Genjutsu conversations need the Claude chat feature, which isn’t available here.'); return false; }
     var tp = personPw(p), pr = clamp(0.35 + effStat('gen')*0.12 + (sharingan() ? 0.15 : 0) - tp/100, 0.1, 0.95);
     if(!chance(pr)){ p.bond = clamp(p.bond - 10, 0, 100); say(p.name + ' saw through your genjutsu and broke free. They’re furious with you.', 'k-bad'); return; }
     say('You trapped ' + p.name + ' in a genjutsu.', 'k-dark'); openChat(p, 'gen', clamp(Math.round(2 + effStat('gen')*0.8 - tp/15), 2, 6)); }});
 def('kotoamatsukami', {cat:'People', cost:30, limit:1, args:true, person:true, desc:'Use Kotoamatsukami to rewrite someone’s will. They obey you until it wears off.',
   when:function(){ return msAbil().indexOf('Kotoamatsukami') >= 0 || 'Only a Mangekyo that holds Kotoamatsukami can do this.'; },
   run:function(args){ var p = personByIdx(args[0]); if(!p){ openSheet('people'); return false; } if(p.pet){ warn('That would be a waste of Kotoamatsukami.'); return false; }
-    if(!sampleFn){ warn('Kotoamatsukami conversations need the Claude chat feature, which isn’t available here.'); return false; }
     say('Your Mangekyo spun. For a moment, ' + p.name + '’s eyes went blank.', 'k-dark'); openChat(p, 'koto', clamp(Math.round(4 + effStat('gen')), 4, 9)); }});
 function chatTagRules(p){
   if(chat.mode === 'gen') return 'RIGHT NOW: ' + p.name + ' is trapped in the player’s genjutsu. They are dazed and compelled to answer every question truthfully and completely, even secrets they would normally hide. They may sound confused or resist weakly, but they cannot lie. Add no tags.\n\n';
@@ -3869,8 +3870,7 @@ def('meet_hagoromo', {cat:'Legends', cost:10, desc:'Reach out to the spirit of H
   when:function(){ if(S.people.some(function(p){ return p.hagoromo && !p.alive; })) return 'Hagoromo is gone for good. You killed him, and his spirit will never answer again.'; return S.reinc ? true : 'Only a reincarnation of Indra or Asura can reach the Sage of Six Paths.'; },
   run:function(){ var h = hagoromo();
     if(!h){ h = addPerson({rel:'Sage of Six Paths', name:'Hagoromo Otsutsuki', age:1000, bond:40, ninja:true, pw:60, spirit:true, hagoromo:true}); say('You fell into a deep trance. An old man with a staff and the Rinnegan stood before you. “So you carry ' + S.reinc + '’s chakra,” said Hagoromo Otsutsuki, the Sage of Six Paths.', 'k-big k-dark'); }
-    if(sampleFn){ openChat(h); return; }
-    h.bond = clamp(h.bond + rnd(4, 8), 0, 100); say('Hagoromo spoke with you about ' + (S.reinc === 'Indra' ? 'your brother Asura, and the burden of power.' : 'your brother Indra, and the strength of bonds.')); }});
+    openChat(h); }});
 function hagoPrompt(p){
   var hist = (p.chat || []).slice(-12).map(function(m){ return (m.r === 'me' ? 'Player' : m.r === 'sys' ? 'Narrator' : 'Hagoromo') + ': ' + m.t; }).join('\n');
   return 'You are voicing Hagoromo Otsutsuki, the Sage of Six Paths, in "Ninja Life", a text life game set in the world of Naruto. You died long ago and speak to the player’s soul in a dreamlike space. You are wise, gentle, a little playful, and you care about peace and the bonds between people.\n' +
@@ -4264,7 +4264,7 @@ function incomingChat(){
 }
 EV.incoming = [function(d){ var p = S.people.find(function(x){ return x.id === d.pid && x.alive; }); if(!p) return; p.chat = p.chat || [];
     if(sampleFn){ openChat(p); sendOpener(p); }
-    else { var line = pick(OPENERS); p.chat.push({r:'them', t:line}); p.bond = clamp(p.bond + 2, 0, 100); say(p.name + ': “' + line + '”'); } },
+    else { var line = pick(OPENERS); p.chat.push({r:'them', t:line}); p.bond = clamp(p.bond + 2, 0, 100); say(p.name + ' came to talk with you.'); openChat(p); } },
   function(d){ var p = S.people.find(function(x){ return x.id === d.pid; }); if(p) p.bond = clamp(p.bond - 1, 0, 100); say('You told them you were busy.'); }];
 function sendOpener(p){
   if(!sampleFn || chat.busy) return;
@@ -4781,10 +4781,79 @@ function sheetMenu(){ return head('Menu') + '<div class="acts">' +
   '<button class="act" type="button" data-menu="settings"><b>Settings</b><small>Mini-games, Claude-written dialogue, pop-ups and text size.</small></button>' +
   '<button class="act" type="button" data-hist><b>Past lives</b><small>Every finished life, with its timeline.</small></button>' +
   '<button class="act" type="button" data-menu="quit"><b>Quit game</b><small>Save and leave. You can close this page any time.</small></button></div>'; }
-function sheetSettings(){ var st = S.settings || {}; function row(k, label, on, d){ return '<button class="act" type="button" data-set="' + k + '" aria-pressed="' + on + '"><b>' + label + ': ' + (on ? 'On' : 'Off') + '</b><small>' + d + '</small></button>'; }
-  return head('Settings') + '<div class="acts">' + row('miniGames', 'Mission mini-games', st.miniGames !== false, 'Play a mini-game that matches the task on many missions.') + row('ai', 'Claude-written dialogue', !st.noAI, 'Conversations, battle lines and jutsu judging written by Claude.') + row('outcome', 'Result pop-ups', !st.noOutcome, 'Show what happened after you make a choice.') + '</div>' +
-    '<div class="group"><h3>Text size</h3><div class="chipset">' + ['Small','Normal','Large'].map(function(x){ return '<button type="button" data-set="text:' + x + '" aria-pressed="' + ((st.text || 'Normal') === x) + '">' + x + '</button>'; }).join('') + '</div></div><button class="ghost" type="button" data-sheet-back="menu">Back to the menu</button>'; }
-function applyText(){ var t = (S && S.settings && S.settings.text) || 'Normal'; document.documentElement.style.fontSize = t === 'Small' ? '14px' : t === 'Large' ? '18px' : ''; }
+function sheetSettings(){ var st = S.settings || {}; function row(k, label, on, d){ return '<button class="act" type="button" data-set="' + k + '" aria-pressed="' + on + '"><b><span>' + label + '</span>: <span>' + (on ? 'On' : 'Off') + '</span></b><small>' + d + '</small></button>'; }
+  return head('Settings') + '<div class="acts">' + row('miniGames', 'Mission mini-games', st.miniGames !== false, 'Play a mini-game that matches the task on many missions.') + row('ai', 'Claude-written dialogue', !st.noAI && !!sampleBackup, sampleBackup ? 'Conversations, battle lines and jutsu judging written by Claude.' : 'Not available in this copy of the game. It only works on claude.ai, so characters use built-in lines here.') + row('outcome', 'Result pop-ups', !st.noOutcome, 'Show what happened after you make a choice.') + row('sfx', 'Sound effects', sfxOn(), 'Little sounds when you tap buttons.') + '</div>' +
+    '<div class="group"><h3>Language</h3><div class="chipset">' + LANGS.map(function(l){ return '<button type="button" data-lang="' + l[0] + '" aria-pressed="' + (LANG === l[0]) + '">' + l[1] + '</button>'; }).join('') + '</div><p class="k-cmd" style="margin:6px 0 0">Menus and buttons switch language. Story text stays in English, and Claude-written conversations answer in your language.</p></div>' +
+    '<div class="group"><h3>Text size</h3><div class="chipset">' + ['Small','Normal','Large'].map(function(x){ return '<button type="button" data-set="text:' + x + '" aria-pressed="' + ((st.text || 'Normal') === x) + '">' + x + '</button>'; }).join('') + '</div></div><button class="ghost" type="button" data-sheet-back="menu">Back to the menu</button>' + (onClaudeAI() ? '' : apiBox()); }
+
+/* ================= YOUR OWN CLAUDE CONNECTION (copies of the game hosted outside claude.ai) ================= */
+var KEY_STORE = 'ninja-life-apikey-v1', apiMsg = '', apiDetail = '';
+function onClaudeAI(){ return !!(window.claude && typeof window.claude.use === 'function'); }
+function apiConfig(){ try { var s = localStorage.getItem(KEY_STORE); return s ? JSON.parse(s) : null; } catch(e){ return null; } }
+function apiSave(cfg){ try { if(cfg) localStorage.setItem(KEY_STORE, JSON.stringify(cfg)); else localStorage.removeItem(KEY_STORE); } catch(e){} }
+function makeApiSampler(cfg){
+  return function(prompt, opts){
+    opts = opts || {};
+    return fetch('https://api.anthropic.com/v1/messages', {method:'POST', signal:opts.signal,
+      headers:{'content-type':'application/json', 'x-api-key':cfg.key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:cfg.model || 'claude-haiku-5-5', max_tokens:500, messages:[{role:'user', content:String(prompt)}]})})
+    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(d){
+      if(!r.ok){ apiDetail = (d && d.error && d.error.message) || ''; throw {code: (r.status === 401 || r.status === 403) ? 'bad_key' : r.status === 429 ? 'rate_limited' : r.status === 404 ? 'bad_model' : 'api_error', status:r.status}; }
+      var text = (d.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+      if(!text){ apiDetail = ''; throw {code:'api_error'}; }
+      apiDetail = ''; return {text:text}; }); },
+      function(e){ if(e && e.code) throw e; if(e && e.name === 'AbortError') throw {code:'aborted'}; throw {code:'network'}; });
+  };
+}
+/* A proxy is a small server of yours that holds the key. Paste its address here before you upload the game to GitHub
+   (see ninja-life-proxy/README.txt) and every visitor gets Claude with no key of their own. */
+var SITE_PROXY = '';
+/* Quick-reply chat bubbles in the built-in chat (used when Claude isn’t connected): true shows them, false hides them. */
+var CHAT_BUBBLES = true;
+var apiViaProxy = false;
+function makeProxySampler(url){
+  return function(prompt, opts){
+    opts = opts || {}; apiViaProxy = true;
+    return fetch(url, {method:'POST', signal:opts.signal, headers:{'content-type':'application/json'}, body:JSON.stringify({prompt:String(prompt)})})
+    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(d){
+      if(!r.ok){ apiDetail = (d && d.error && d.error.message) || ''; var c = d && d.error && d.error.code; throw {code: c === 'blocked' ? 'blocked' : r.status === 429 ? 'rate_limited' : 'api_error', status:r.status}; }
+      if(!d.text){ apiDetail = ''; throw {code:'api_error'}; }
+      apiDetail = ''; return {text:d.text}; }); },
+      function(e){ if(e && e.code) throw e; if(e && e.name === 'AbortError') throw {code:'aborted'}; throw {code:'network'}; });
+  };
+}
+function buildSampler(){ var cfg = apiConfig() || {}; if(cfg.key) return langWrap(makeApiSampler(cfg)); var url = cfg.proxy || SITE_PROXY; return url ? langWrap(makeProxySampler(url)) : null; }
+function syncAI(){ if(onClaudeAI()) return; sampleFn = (S && S.settings && S.settings.noAI) ? null : sampleBackup; }
+function apiBox(){
+  var cfg = apiConfig() || {}, has = !!(cfg.key || cfg.proxy || SITE_PROXY), mine = !!(cfg.key || cfg.proxy);
+  return '<div class="group"><h3>Connect Claude</h3><p class="k-cmd" style="margin:0 0 8px">' + (SITE_PROXY && !mine ? 'This site already provides Claude-written conversations. You can also use your own key below instead.' : 'This copy of the game isn’t on claude.ai, so characters use built-in lines. Connect Claude to get real Claude-written conversations, battle dialogue and jutsu judging. Anthropic bills the account that owns the key (a short chat message costs a fraction of a cent on the default model).') + '</p>' +
+    '<label class="f" for="apiKey">Your own API key</label><input class="t" id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="' + (cfg.key ? 'Saved (hidden). Paste a new key to replace it.' : 'sk-ant-…') + '" style="width:100%">' +
+    '<label class="f" for="apiModel">Model (used with your own key)</label><input class="t" id="apiModel" autocomplete="off" spellcheck="false" value="' + esc(cfg.model || 'claude-haiku-5-5') + '" style="width:100%">' +
+    '<label class="f" for="apiProxy">Or a proxy address (advanced)</label><input class="t" id="apiProxy" autocomplete="off" spellcheck="false" placeholder="https://your-proxy.workers.dev" value="' + esc(cfg.proxy || '') + '" style="width:100%">' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px"><button class="primary" type="button" data-api="save">Save</button><button class="ghost" type="button" data-api="test" style="margin:0"' + (has ? '' : ' disabled') + '>Test</button><button class="ghost danger" type="button" data-api="remove" style="margin:0"' + (mine ? '' : ' disabled') + '>Remove</button></div>' +
+    (apiMsg ? '<p class="' + (/^(Connected|Saved|Removed)/.test(apiMsg) ? 'k-good' : /^Testing/.test(apiMsg) ? 'k-cmd' : 'k-bad') + '" style="margin-top:8px">' + esc(apiMsg) + '</p>' : '') +
+    '<p class="k-cmd" style="margin:10px 0 0"><b>Keep it safe:</b> your own key is stored only in this browser, never in the game file or your saved lives. Anyone who can use this browser can use the key, so don’t enter it on a shared computer. Create a key just for this game and set a monthly spending limit for it in the Anthropic console.</p></div>';
+}
+function apiAction(a){
+  var cfg = apiConfig() || {};
+  if(a === 'remove'){ apiSave(null); sampleBackup = buildSampler(); syncAI(); apiMsg = SITE_PROXY ? 'Removed your key and proxy. This site’s own Claude connection is used again.' : 'Removed your key from this browser. Characters use built-in lines again.'; return Promise.resolve(); }
+  if(a === 'save'){
+    var k = ($('#apiKey').value || '').trim(), m = ($('#apiModel').value || '').trim() || 'claude-haiku-5-5', px = ($('#apiProxy').value || '').trim();
+    if(k && k.indexOf('sk-ant-') !== 0){ apiMsg = 'That doesn’t look like an Anthropic API key. They start with sk-ant-.'; return Promise.resolve(); }
+    if(px && !/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:\/])\S+$/i.test(px)){ apiMsg = 'The proxy address must start with https://'; return Promise.resolve(); }
+    if(!k && !cfg.key && !px){ apiMsg = 'Paste your API key or a proxy address first.'; return Promise.resolve(); }
+    apiSave({key:k || cfg.key || '', model:m, proxy:px}); sampleBackup = buildSampler(); syncAI();
+    apiMsg = 'Saved. Tap Test to check that it works.'; return Promise.resolve();
+  }
+  if(a === 'test'){
+    var s = buildSampler(); if(!s){ apiMsg = 'Nothing is connected yet.'; return Promise.resolve(); }
+    apiMsg = 'Testing…'; openSheet('settings');
+    return s('Reply with the single word: ready').then(function(){ apiMsg = 'Connected! Claude will now write the conversations in this copy of the game.'; },
+      function(e){ apiMsg = chatErr(e && e.code); });
+  }
+  return Promise.resolve();
+}
+function applyText(){ syncAI(); var t = (S && S.settings && S.settings.text) || 'Normal'; document.documentElement.style.fontSize = t === 'Small' ? '14px' : t === 'Large' ? '18px' : ''; }
 
 /* ================= HATS AND CLOTHES ================= */
 var HATS = ['None','Straw hat','Kage hat','Bandana','Hood','Beanie','Flower','ANBU mask'];
@@ -4825,15 +4894,18 @@ function gcTurn(){
     var last = gchat.log[gchat.log.length - 1];
     var named = ppl.filter(function(p){ return last && last.t && last.t.toLowerCase().indexOf(p.name.split(' ')[0].toLowerCase()) >= 0 && !(last.r !== 'me' && last.who === p.name); });
     var rest = shuffle(ppl.filter(function(p){ return named.indexOf(p) < 0; }));
-    var speakers = named.concat(rest).slice(0, Math.max(1, Math.min(ppl.length, named.length + (chance(0.5) ? 1 : 2))));
+    var speakers = named.concat(rest).slice(0, sampleFn ? Math.max(1, Math.min(ppl.length, named.length + (chance(0.5) ? 1 : 2))) : Math.min(ppl.length, 3));
     gchat.queue = speakers.map(function(p){ return p.id; });
   }
   var id = gchat.queue.shift(), p = S.people.find(function(x){ return x.id === id && x.alive; });
   if(!p){ gcDone(); return; }
-  if(!sampleFn){ var line = pick(['Agreed.','I don’t know about that.','Ha, good one.','Hm.','What do the rest of you think?']); gchat.log.push({r:'them', who:p.name, t:line}); gcAfter(); return; }
+  if(!sampleFn){ gchat.busy = true; gchat.speaker = p.name; gchat.live = ''; rerenderGC();
+    var lastMe = ''; for(var li = gchat.log.length - 1; li >= 0; li--) if(gchat.log[li].r === 'me'){ lastMe = gchat.log[li].t; break; }
+    setTimeout(function(){ var r = offlineReply(p, lastMe, true), tries = 0; while(tries++ < 3 && gchat.log.some(function(m){ return m.t && m.t.indexOf(r.text) >= 0; })) r = offlineReply(p, lastMe, true); var txt = groupReact(p, ppl) + r.text;
+      gchat.busy = false; gchat.log.push({r:'them', who:p.name, t:txt}); p.bond = clamp(p.bond + (r.bond > 0 ? 1 : r.bond < 0 ? -2 : 0), 0, 100); gcAfter(); }, 400); return; }
   gchat.busy = true; gchat.live = ''; gchat.speaker = p.name; var ctl = new AbortController(); gchat.ctl = ctl; rerenderGC();
   sampleFn(gcPrompt(p), {modelTier:'quick', cache:false, signal:ctl.signal, onText:function(ev){ gchat.live = cleanReply(ev.text); var lb = document.getElementById('gcLive'); if(lb) lb.textContent = p.name + ': ' + (gchat.live || '…'); }})
-    .then(function(res){ var t = cleanReply(res.text); gchat.busy = false; gchat.live = ''; if(t) gchat.log.push({r:'them', who:p.name, t:t}); p.bond = clamp(p.bond + (chance(0.3) ? 1 : 0), 0, 100); gcAfter(); },
+    .then(function(res){ var t = cleanReply(res.text).replace(new RegExp('^\\s*(' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '|' + p.name.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\s*:\\s*', 'i'), ''); gchat.busy = false; gchat.live = ''; if(t) gchat.log.push({r:'them', who:p.name, t:t}); p.bond = clamp(p.bond + (chance(0.3) ? 1 : 0), 0, 100); gcAfter(); },
       function(e){ gchat.busy = false; gchat.live = ''; if(e && e.code !== 'aborted') gchat.err = chatErr(e && e.code); gcAfter(); });
 }
 function gcAfter(){ save(); if(sheetKind === 'groupchat'){ rerenderGC(); if(gchat.queue.length && !gchat.err) setTimeout(gcTurn, 350); } }
@@ -4852,8 +4924,9 @@ function sheetGroupChat(){
   h += '<div class="chatlog" id="gclog">' + gchat.log.map(function(m){ return m.r === 'me' ? '<div class="bub me">' + esc(m.t) + '</div>' : '<div class="gcmsg"><b>' + esc(m.who) + '</b>' + esc(m.t) + '</div>'; }).join('') +
     (gchat.busy ? '<div class="gcmsg" id="gcLive"><b>' + esc(gchat.speaker) + '</b>' + esc(gchat.live || '…') + '</div>' : '') +
     (gchat.err ? '<div class="bub sys">' + esc(gchat.err) + '</div>' : '') +
-    (!gchat.log.length && !gchat.busy ? '<div class="bub sys">Say something to the group.</div>' : '') + '</div>';
+    (!gchat.log.length && !gchat.busy ? '<div class="bub sys">Say something to the group.' + (sampleFn ? '' : ' (Offline mode: built-in replies. The Claude-written version works on claude.ai.)') + '</div>' : '') + '</div>';
   h += '<form class="chatform" id="gcForm" autocomplete="off"><input class="t" id="gcIn" maxlength="300" placeholder="Say something to everyone"' + (gchat.busy ? ' disabled' : '') + '><button type="submit"' + (gchat.busy ? ' disabled' : '') + '>Send</button></form>';
+  if(CHAT_BUBBLES && !sampleFn && !gchat.busy) h += groupBubbles();
   h += '<button class="ghost" type="button" data-back="people">Back to People</button>';
   return h;
 }
@@ -5122,6 +5195,117 @@ function sheetHistoryBook(){
   return h + '<p class="k-cmd" style="margin-top:12px">★ your life · ◆ your past lives</p>'; }
 def('read_history_books', {cat:'Life', cost:5, desc:'Read the history of the shinobi world, including anything you and your past lives have done.', run:function(){ openSheet('historybook'); return false; }});
 
+
+/* ================= LANGUAGES ================= */
+var LANGS = [['en','English'],['es','Español'],['ja','日本語'],['pt','Português'],['fr','Français'],['ru','Русский'],['uk','Українська']];
+var LANG_NAME = {en:'English', es:'Spanish', ja:'Japanese', pt:'Portuguese', fr:'French', ru:'Russian', uk:'Ukrainian'};
+var LANG = (function(){ try { return localStorage.getItem('ninja-life-lang') || 'en'; } catch(e){ return 'en'; } })();
+var I18N_KEYS = ['Activities','Age','Be born','Birth era','Birth village','Both parents alive','Clan','Clan head’s family','Comfortable clan family','Continue your saved life','Customize everything','Energy','Eye color','Family','Family wealth','Female','Gender','Hair color','Help','Jinchuriki','Kekkei genkai','Looks','Male','Move lives from another copy','Name','Nature affinities','Ninja family','None','Orphan','Past lives','People','Poor civilians','Profile','Random','Reincarnation','Run','Smarts','Talent','Traits',
+ 'Group chat','Groups','History books','How to play','Invent a jutsu','Jutsu','Kage summit','Menu','Move your lives','Rankings','Settings','Your face','Your home','The Pure Land','Talk',
+ 'Close','Back to People','Back to the menu','Start a new life','Play','View','Delete','Tap again to delete','Got it','Continue','Attack','Defend','Flee','Send','Save','Test','Remove','Your saved lives','Health','Happiness','Back to the main menu','Quit game','Text size','Small','Normal','Large','Everyone','My village','My clan','Your items','Language','Discard','Discard all past lives','Tap again to discard','Mission mini-games','Claude-written dialogue','Result pop-ups','Sound effects','On','Off',
+ 'Hi! How are you?','Want to train together?','What is your dream?','What do you think of the village?','Tell me a joke!','Any advice for me?','Can you teach me a jutsu?','Would you go out with me?','Will you marry me?','Could you lend me some money?','Join my organization?','I’m sorry. Please forgive me.','Bye!',
+ 'Hey everyone!','What do you all think of the village?','Let’s go on a mission!','Bye, everyone!'];
+var I18N_VALS = {
+ es:['Actividades','Edad','Nacer','Época de nacimiento','Aldea natal','Ambos padres vivos','Clan','Familia del líder del clan','Familia de clan acomodada','Continuar tu vida guardada','Personalizar todo','Energía','Color de ojos','Familia','Riqueza familiar','Mujer','Género','Color de pelo','Ayuda','Jinchūriki','Kekkei genkai','Apariencia','Hombre','Traer vidas de otra copia','Nombre','Afinidades de naturaleza','Familia ninja','Ninguno','Huérfano','Vidas pasadas','Personas','Civiles pobres','Perfil','Aleatorio','Reencarnación','Huir','Inteligencia','Talento','Rasgos',
+  'Chat grupal','Grupos','Libros de historia','Cómo jugar','Inventar un jutsu','Jutsu','Cumbre de Kage','Menú','Mover tus vidas','Clasificación','Ajustes','Tu cara','Tu hogar','La Tierra Pura','Hablar',
+  'Cerrar','Volver a Personas','Volver al menú','Empezar una nueva vida','Jugar','Ver','Borrar','Toca otra vez para borrar','Entendido','Continuar','Atacar','Defender','Huir','Enviar','Guardar','Probar','Quitar','Tus vidas guardadas','Salud','Felicidad','Volver al menú principal','Salir del juego','Tamaño del texto','Pequeño','Normal','Grande','Todos','Mi aldea','Mi clan','Tus objetos','Idioma','Descartar','Descartar todas las vidas pasadas','Toca otra vez para descartar','Minijuegos de misión','Diálogo escrito por Claude','Ventanas de resultado','Efectos de sonido','Activado','Desactivado',
+  '¡Hola! ¿Cómo estás?','¿Entrenamos juntos?','¿Cuál es tu sueño?','¿Qué piensas de la aldea?','¡Cuéntame un chiste!','¿Algún consejo para mí?','¿Me enseñas un jutsu?','¿Saldrías conmigo?','¿Te casarías conmigo?','¿Me prestas algo de dinero?','¿Te unes a mi organización?','Lo siento. Por favor, perdóname.','¡Adiós!',
+  '¡Hola a todos!','¿Qué piensan todos de la aldea?','¡Vamos de misión!','¡Adiós a todos!'],
+ ja:['行動','年齢','生まれる','生まれた時代','出身の里','両親健在','一族','一族の長の家','裕福な一族の家','保存した人生を続ける','すべてカスタマイズ','エネルギー','目の色','家族','家の財産','女性','性別','髪の色','ヘルプ','人柱力','血継限界','容姿','男性','別のコピーから人生を移す','名前','性質変化','忍の家','なし','孤児','前世','人々','貧しい一般人','プロフィール','ランダム','転生','逃げる','知力','才能','特性',
+  'グループチャット','グループ','歴史書','遊び方','術を編み出す','術','影会談','メニュー','人生を移す','ランキング','設定','あなたの顔','あなたの家','浄土','話す',
+  '閉じる','人々に戻る','メニューに戻る','新しい人生を始める','プレイ','見る','削除','もう一度タップで削除','了解','続ける','攻撃','防御','逃げる','送信','保存','テスト','削除','保存した人生','健康','幸福','メインメニューに戻る','ゲームを終了','文字の大きさ','小','標準','大','全員','自分の里','自分の一族','持ち物','言語','破棄','前世をすべて破棄','もう一度タップで破棄','任務ミニゲーム','Claudeによる会話','結果のポップアップ','効果音','オン','オフ',
+  'やあ！元気？','一緒に修行しない？','夢は何？','里のことどう思う？','何か面白い話をして！','何かアドバイスある？','術を教えてくれない？','付き合ってくれない？','結婚してくれる？','少しお金を貸してくれない？','私の組織に入らない？','ごめん。どうか許して。','またね！',
+  'みんな、やあ！','みんなは里のことどう思う？','任務に行こう！','みんな、またね！'],
+ pt:['Atividades','Idade','Nascer','Era de nascimento','Vila natal','Ambos os pais vivos','Clã','Família do líder do clã','Família de clã confortável','Continuar sua vida salva','Personalizar tudo','Energia','Cor dos olhos','Família','Riqueza da família','Feminino','Gênero','Cor do cabelo','Ajuda','Jinchuuriki','Kekkei genkai','Aparência','Masculino','Trazer vidas de outra cópia','Nome','Afinidades de natureza','Família ninja','Nenhum','Órfão','Vidas passadas','Pessoas','Civis pobres','Perfil','Aleatório','Reencarnação','Fugir','Inteligência','Talento','Traços',
+  'Chat em grupo','Grupos','Livros de história','Como jogar','Inventar um jutsu','Jutsu','Cúpula dos Kage','Menu','Mover suas vidas','Classificação','Configurações','Seu rosto','Sua casa','A Terra Pura','Conversar',
+  'Fechar','Voltar para Pessoas','Voltar ao menu','Começar uma nova vida','Jogar','Ver','Excluir','Toque de novo para excluir','Entendi','Continuar','Atacar','Defender','Fugir','Enviar','Salvar','Testar','Remover','Suas vidas salvas','Saúde','Felicidade','Voltar ao menu principal','Sair do jogo','Tamanho do texto','Pequeno','Normal','Grande','Todos','Minha vila','Meu clã','Seus itens','Idioma','Descartar','Descartar todas as vidas passadas','Toque de novo para descartar','Minijogos de missão','Diálogos escritos pelo Claude','Janelas de resultado','Efeitos sonoros','Ligado','Desligado',
+  'Oi! Tudo bem?','Vamos treinar juntos?','Qual é o seu sonho?','O que você acha da vila?','Me conta uma piada!','Algum conselho pra mim?','Pode me ensinar um jutsu?','Quer sair comigo?','Quer se casar comigo?','Pode me emprestar um dinheiro?','Quer entrar na minha organização?','Desculpa. Por favor, me perdoa.','Tchau!',
+  'Oi, pessoal!','O que vocês acham da vila?','Vamos numa missão!','Tchau, pessoal!'],
+ fr:['Activités','Âge','Naître','Époque de naissance','Village natal','Deux parents en vie','Clan','Famille du chef de clan','Famille de clan aisée','Reprendre ta vie sauvegardée','Tout personnaliser','Énergie','Couleur des yeux','Famille','Richesse familiale','Femme','Genre','Couleur des cheveux','Aide','Jinchûriki','Kekkei genkai','Apparence','Homme','Importer des vies d’une autre copie','Nom','Affinités élémentaires','Famille ninja','Aucun','Orphelin','Vies antérieures','Personnes','Civils pauvres','Profil','Aléatoire','Réincarnation','Fuir','Intelligence','Talent','Traits',
+  'Discussion de groupe','Groupes','Livres d’histoire','Comment jouer','Inventer un jutsu','Jutsu','Sommet des Kage','Menu','Transférer tes vies','Classements','Paramètres','Ton visage','Ta maison','La Terre Pure','Parler',
+  'Fermer','Retour aux personnes','Retour au menu','Commencer une nouvelle vie','Jouer','Voir','Supprimer','Touche encore pour supprimer','Compris','Continuer','Attaquer','Se défendre','Fuir','Envoyer','Enregistrer','Tester','Retirer','Tes vies sauvegardées','Santé','Bonheur','Retour au menu principal','Quitter le jeu','Taille du texte','Petit','Normal','Grand','Tout le monde','Mon village','Mon clan','Tes objets','Langue','Effacer','Effacer toutes les vies antérieures','Touche encore pour effacer','Mini-jeux de mission','Dialogues écrits par Claude','Fenêtres de résultat','Effets sonores','Activé','Désactivé',
+  'Salut ! Comment ça va ?','On s’entraîne ensemble ?','Quel est ton rêve ?','Que penses-tu du village ?','Raconte-moi une blague !','Un conseil pour moi ?','Tu peux m’apprendre un jutsu ?','Tu veux sortir avec moi ?','Veux-tu m’épouser ?','Tu peux me prêter un peu d’argent ?','Tu rejoins mon organisation ?','Je suis désolé. Pardonne-moi, s’il te plaît.','Au revoir !',
+  'Salut tout le monde !','Que pensez-vous du village ?','Partons en mission !','Au revoir, tout le monde !'],
+ ru:['Действия','Возраст','Родиться','Эпоха рождения','Родная деревня','Оба родителя живы','Клан','Семья главы клана','Обеспеченная семья клана','Продолжить сохранённую жизнь','Настроить всё','Энергия','Цвет глаз','Семья','Достаток семьи','Женский','Пол','Цвет волос','Помощь','Джинчурики','Кеккей генкай','Внешность','Мужской','Перенести жизни из другой копии','Имя','Стихии чакры','Семья ниндзя','Нет','Сирота','Прошлые жизни','Люди','Бедные горожане','Профиль','Случайно','Перерождение','Бежать','Ум','Талант','Черты',
+  'Групповой чат','Группы','Книги по истории','Как играть','Создать дзюцу','Дзюцу','Совет Каге','Меню','Перенос жизней','Рейтинг','Настройки','Твоё лицо','Твой дом','Чистая Земля','Поговорить',
+  'Закрыть','Назад к людям','Назад в меню','Начать новую жизнь','Играть','Смотреть','Удалить','Нажми ещё раз, чтобы удалить','Понятно','Продолжить','Атаковать','Защищаться','Бежать','Отправить','Сохранить','Проверить','Убрать','Твои сохранённые жизни','Здоровье','Счастье','В главное меню','Выйти из игры','Размер текста','Мелкий','Обычный','Крупный','Все','Моя деревня','Мой клан','Твои предметы','Язык','Стереть','Стереть все прошлые жизни','Нажми ещё раз, чтобы стереть','Мини-игры миссий','Диалоги от Claude','Окна результатов','Звуковые эффекты','Вкл','Выкл',
+  'Привет! Как дела?','Потренируемся вместе?','О чём ты мечтаешь?','Что ты думаешь о деревне?','Расскажи анекдот!','Дашь мне совет?','Научишь меня дзюцу?','Пойдёшь со мной на свидание?','Давай поженимся?','Одолжишь немного денег?','Вступишь в мою организацию?','Прости. Пожалуйста, прости меня.','Пока!',
+  'Всем привет!','Что вы все думаете о деревне?','Пойдёмте на миссию!','Всем пока!'],
+ uk:['Дії','Вік','Народитися','Епоха народження','Рідне село','Обоє батьків живі','Клан','Родина голови клану','Заможна родина клану','Продовжити збережене життя','Налаштувати все','Енергія','Колір очей','Родина','Статок родини','Жіноча','Стать','Колір волосся','Допомога','Джінчурікі','Кеккей ґенкай','Зовнішність','Чоловіча','Перенести життя з іншої копії','Ім’я','Стихії чакри','Родина ніндзя','Немає','Сирота','Минулі життя','Люди','Бідні містяни','Профіль','Випадково','Переродження','Тікати','Розум','Талант','Риси',
+  'Груповий чат','Групи','Книги з історії','Як грати','Створити дзюцу','Дзюцу','Рада Каґе','Меню','Перенесення життів','Рейтинг','Налаштування','Твоє обличчя','Твій дім','Чиста Земля','Поговорити',
+  'Закрити','Назад до людей','Назад до меню','Почати нове життя','Грати','Переглянути','Видалити','Натисни ще раз, щоб видалити','Зрозуміло','Продовжити','Атакувати','Захищатися','Тікати','Надіслати','Зберегти','Перевірити','Прибрати','Твої збережені життя','Здоров’я','Щастя','До головного меню','Вийти з гри','Розмір тексту','Дрібний','Звичайний','Великий','Усі','Моє село','Мій клан','Твої предмети','Мова','Стерти','Стерти всі минулі життя','Натисни ще раз, щоб стерти','Міні-ігри місій','Діалоги від Claude','Вікна результатів','Звукові ефекти','Увімк.','Вимк.',
+  'Привіт! Як справи?','Потренуємося разом?','Про що ти мрієш?','Що ти думаєш про село?','Розкажи жарт!','Даси мені пораду?','Навчиш мене дзюцу?','Підеш зі мною на побачення?','Давай одружимося?','Позичиш трохи грошей?','Приєднаєшся до моєї організації?','Вибач. Будь ласка, пробач мені.','Бувай!',
+  'Усім привіт!','Що ви всі думаєте про село?','Ходімо на місію!','Усім бувай!']
+};
+var I18N = {}; Object.keys(I18N_VALS).forEach(function(l){ var d = {}; I18N_KEYS.forEach(function(k, i){ if(I18N_VALS[l][i]) d[k] = I18N_VALS[l][i]; }); I18N[l] = d; });
+function trNode(n){ var d = I18N[LANG]; if(!d) return; var s = n.nodeValue, k = s.trim(), v = k && d[k]; if(!v || v === k) return; var nv = s.replace(k, v); if(nv !== s) n.nodeValue = nv; }
+function trTree(root){ if(!I18N[LANG]) return; var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n; while((n = w.nextNode())) trNode(n); }
+var trObs = typeof MutationObserver !== 'undefined' ? new MutationObserver(function(ms){ if(!I18N[LANG]) return; ms.forEach(function(m){ if(m.type === 'characterData') trNode(m.target); else m.addedNodes.forEach(function(nd){ if(nd.nodeType === 3) trNode(nd); else if(nd.nodeType === 1) trTree(nd); }); }); }) : null;
+function startI18n(){ document.documentElement.lang = LANG; if(!I18N[LANG] || !trObs) return; trTree(document.body); trObs.observe(document.body, {childList:true, subtree:true, characterData:true}); }
+function setLang(code){ try { localStorage.setItem('ninja-life-lang', code); } catch(e){} location.reload(); }
+function langWrap(fn){ return function(prompt, opts){ var L = LANG_NAME[LANG]; return fn(L && LANG !== 'en' ? 'LANGUAGE: Write every word a player will read (dialogue, descriptions, verdicts) in ' + L + '. Keep bracketed tags like [bond:N] and [do:...], and any JSON keys, exactly as written, in English.\n\n' + prompt : prompt, opts); }; }
+
+/* ================= SOUND EFFECTS ================= */
+var SFX = {ctx:null};
+function sfxOn(){ try { return localStorage.getItem('ninja-life-sfx') !== 'off'; } catch(e){ return true; } }
+function sfx(kind){
+  if(!sfxOn()) return;
+  try {
+    var C = SFX.ctx || (SFX.ctx = new (window.AudioContext || window.webkitAudioContext)()); if(C.state === 'suspended') C.resume();
+    var t = C.currentTime, o = C.createOscillator(), g = C.createGain(), f = {click:[520, 0.06, 'triangle'], big:[330, 0.16, 'sine'], hit:[150, 0.13, 'square'], good:[660, 0.16, 'sine']}[kind] || [520, 0.06, 'triangle'];
+    o.type = f[2]; o.frequency.setValueAtTime(f[0], t);
+    if(kind === 'hit') o.frequency.exponentialRampToValueAtTime(55, t + f[1]); else if(kind === 'good') o.frequency.exponentialRampToValueAtTime(990, t + f[1]); else if(kind === 'big') o.frequency.exponentialRampToValueAtTime(560, t + f[1]);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === 'hit' ? 0.08 : 0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + f[1]);
+    o.connect(g); g.connect(C.destination); o.start(t); o.stop(t + f[1] + 0.02);
+  } catch(e){}
+}
+document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('button'); if(!b || b.disabled) return;
+  var bc = b.getAttribute('data-bcmd') || '', kind = b.id === 'ageBtn' ? 'big' : (/^(attack|jutsu)/.test(bc)) ? 'hit' : b.classList.contains('primary') ? 'good' : 'click'; sfx(kind); }, true);
+
+/* ================= QUICK CHAT BUBBLES (built-in conversations) ================= */
+function quickBubbles(p){
+  var list = ['Hi! How are you?','Want to train together?','What is your dream?','What do you think of the village?','Tell me a joke!','Any advice for me?'];
+  if(typeof teachList === 'function' && teachList(p).length) list.push('Can you teach me a jutsu?');
+  if(datingOK(p) === true && ['Friend','Teammate','Rival','Acquaintance','Classmate'].indexOf(p.rel) >= 0 && !p.spirit && !p.reanimated && !p.pet) list.push('Would you go out with me?');
+  if(p.rel === 'Partner' && S.age >= 18 && p.age >= 18) list.push('Will you marry me?');
+  if(p.bond >= 50 && p.gaveYear !== year()) list.push('Could you lend me some money?');
+  if(S.myOrg && !p.orgMember) list.push('Join my organization?');
+  if(S.rank === 'Missing-nin') list.push('I’m sorry. Please forgive me.');
+  var other = S.people.filter(function(q){ return q.alive && !q.pet && q.id !== p.id && q.canon != null; })[0]; if(other) list.push('What do you think of ' + other.name.split(' ')[0] + '?');
+  list.push('Bye!');
+  return '<div class="qb" aria-label="Quick replies">' + list.map(function(s){ return '<button type="button" data-say="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>';
+}
+function groupBubbles(){ return '<div class="qb" aria-label="Quick replies">' + ['Hey everyone!','Want to train together?','What do you all think of the village?','Let’s go on a mission!','Tell me a joke!','Bye, everyone!'].map(function(s){ return '<button type="button" data-gcsay="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>'; }
+
+/* ================= MORE CHARACTERS AND JUTSU ================= */
+[['Chiyo','Hidden Sand',-72,15,33,null,[[-55,'Jonin']],[],''],['Baki','Hidden Sand',-25,99,27,null,[[-10,'Jonin']],[],''],['Pakura','Hidden Sand',-30,-10,30,null,[[-18,'Jonin']],[],'Scorch Style'],
+ ['Rasa','Hidden Sand',-40,12,33,'Kazekage Family',[[-25,'Jonin'],[-12,'Kage']],[],''],['Yugito Nii','Hidden Cloud',-12,15,30,null,[[2,'Jonin']],[],''],['Omoi','Hidden Cloud',1,99,25,null,[[14,'Chunin']],[],''],
+ ['Karui','Hidden Cloud',1,99,24,null,[[14,'Chunin']],[],''],['Samui','Hidden Cloud',-3,99,26,null,[[10,'Jonin']],[],''],['Mabui','Hidden Cloud',-8,17,22,null,[[5,'Jonin']],[],''],
+ ['Ao','Hidden Mist',-30,99,30,null,[[-15,'Jonin']],[],'Byakugan'],['Chojuro','Hidden Mist',1,99,27,null,[[13,'Chunin'],[17,'Jonin'],[20,'Kage']],[],''],['Yagura','Hidden Mist',-25,14,36,null,[[-15,'Kage']],[],''],
+ ['Kurotsuchi','Hidden Stone',-4,99,28,null,[[8,'Chunin'],[14,'Jonin'],[20,'Kage']],[],'Lava Style'],['Akatsuchi','Hidden Stone',-10,99,24,null,[[5,'Jonin']],[],''],
+ ['Shizune','Hidden Leaf',-14,99,26,null,[[0,'Jonin']],[],''],['Anko Mitarashi','Hidden Leaf',-12,99,27,null,[[0,'Special Jonin']],[],''],['Hayate Gekko','Hidden Leaf',-14,12,24,null,[[-2,'Special Jonin']],[],''],
+ ['Inoichi Yamanaka','Hidden Leaf',-30,17,27,'Yamanaka',[[-15,'Jonin']],[],''],['Choza Akimichi','Hidden Leaf',-30,99,28,'Akimichi',[[-15,'Jonin']],[],''],
+ ['Kimimaro','Hidden Sound',-3,13,32,'Kaguya',[[9,'Jonin']],[[9,13,'Sound']],'Dead Bone Pulse'],['Tayuya','Hidden Sound',-2,13,24,null,[[9,'Chunin']],[[9,13,'Sound']],''],
+ ['Jirobo','Hidden Sound',-2,13,24,null,[[9,'Chunin']],[[9,13,'Sound']],''],['Kidomaru','Hidden Sound',-2,13,25,null,[[9,'Chunin']],[[9,13,'Sound']],''],['Sakon','Hidden Sound',-2,13,25,null,[[9,'Chunin']],[[9,13,'Sound']],''],
+ ['Utakata','Hidden Mist',-10,15,31,null,[[3,'Missing-nin']],[],'']
+].forEach(function(a){ if(canonIdx(a[0]) < 0) CANON.push({n:a[0], v:a[1], b:a[2], d:a[3], p:a[4], c:a[5], r:a[6], o:a[7], kg:a[8]}); });
+addJ('Water Style: Raging Waves','nin',20,40,'dmg',{nat:'Water',lvl:1});
+addJ('Wind Style: Vacuum Sphere','nin',22,44,'dmg',{nat:'Wind',lvl:2});
+addJ('Fire Style: Hiding in Ash','nin',14,0,'dodge',{nat:'Fire',lvl:2},[0.5,2]);
+addJ('Earth Style: Rock Fist','nin',16,36,'dmg',{nat:'Earth',lvl:1});
+addJ('Lightning Style: Black Panther','nin',35,64,'dmg',{nat:'Lightning',lvl:4});
+addJ('Temple of Nirvana Technique','gen',25,0,'stun',{lvl:3,st:['gen',3.5]},2);
+addJ('Cherry Blossom Impact','tai',15,48,'dmg',{ctrl:75,st:['str',3]});
+addJ('Severe Leaf Hurricane','tai',12,42,'dmg',{knows:['Leaf Gale',60],st:['tai',3.5]});
+addJ('Puppet Technique: Hundred Puppets','nin',50,80,'dmg',{lvl:4,st:['seals',4]});
+addJ('Ninja Art: Poison Mist','nin',18,30,'burn',{lvl:2,st:['nin',2.5]},6);
+addJ('Crystal Style: Crystal Prison','nin',30,0,'stun',{lvl:3,st:['nin',4]},2);
+addJ('Ink Style: Super Beast Scroll','nin',18,36,'dmg',{lvl:2,st:['seals',3]});
+addJ('Shadow Neck Bind','nin',20,30,'dmg',{clan:'Nara',lvl:2});
+addJ('Partial Expansion Jutsu','nin',12,34,'dmg',{clan:'Akimichi'});
+addJ('Mind Body Disturbance','nin',16,0,'stun',{clan:'Yamanaka',lvl:2},2);
+addJ('Insect Jar Technique','nin',20,0,'stun',{clan:'Aburame',lvl:2},2);
+addJ('Gatsuga','tai',16,44,'dmg',{clan:'Inuzuka',lvl:2});
 
 /* ================= EXEC ================= */
 function optMatch(name){ return !!(S.pending && S.pending.options.some(function(o){ return o === '/' + name || o.indexOf('/' + name + ' ') === 0; })); }
@@ -5673,6 +5857,8 @@ function faceSVG(f, fs){
   if(f.extra === 'Glasses') o += '<g fill="none" stroke="#2A2A30" stroke-width="1"><circle cx="25" cy="37" r="4.6"/><circle cx="39" cy="37" r="4.6"/><path d="M29.6 36.6 L34.4 36.6"/></g>';
   if(f.extra === 'Shades') o += '<g fill="#1C1F26"><ellipse cx="25" cy="37" rx="5.2" ry="3.6"/><ellipse cx="39" cy="37" rx="5.2" ry="3.6"/><rect x="29.5" y="35.6" width="5" height="1.4"/></g>';
   if(f.extra === 'Face mask') o += '<path d="M14.8 41.5 Q32 36.5 49.2 41.5 L49 46 Q46.5 56.5 32 57 Q17.5 56.5 15 46 Z" fill="#2B3352"/>';
+  if(f.extra === 'Visor') o += '<rect x="17" y="32.5" width="30" height="8" rx="3" fill="#2B3352" opacity=".88"/><rect x="19" y="34" width="26" height="2" rx="1" fill="#8FD6F4" opacity=".6"/>';
+  if(f.extra === 'Senbon') o += '<path d="M33 47.2 L45 43.6" stroke="#B9BDC4" stroke-width=".9" stroke-linecap="round"/>';
   if(f.extra === 'Monocle') o += '<circle cx="39" cy="37" r="5" fill="none" stroke="#B8901F" stroke-width="1"/><path d="M44 38 Q47 46 46 54" stroke="#B8901F" stroke-width=".6" fill="none"/>';
   if(f.extra === 'Nose bandage') o += '<rect x="29" y="40" width="6" height="2.6" rx=".8" fill="#F3E3C3" stroke="#D9C49A" stroke-width=".4"/>';
   if(f.extra === 'Round glasses') o += '<g fill="none" stroke="#8A6A2A" stroke-width="1"><circle cx="25" cy="37" r="5.2"/><circle cx="39" cy="37" r="5.2"/><path d="M30.2 36.5 L33.8 36.5"/></g>';
@@ -5769,6 +5955,22 @@ HAT_SVG['Samurai helmet'] = '<path d="M12 26 Q12 9 32 8 Q52 9 52 26 Z" fill="#3A
 HATS.splice(HATS.length - 1, 0, 'Horns', 'Samurai helmet');
 SHIRTS.splice(SHIRTS.length - 1, 0, 'Haori', 'Jacket'); Object.assign(SHIRT_P, {'Haori':'haori', 'Jacket':'zip'});
 
+/* ================= EVEN MORE FACE OPTIONS (3) ================= */
+FRONT_HAIR['Wild mane'] = FRONT_HAIR.Spiky;
+BACK_HAIR['Wild mane'] = '<path d="M8 36 L2 26 L9 24 L4 14 L14 16 L12 6 L22 11 L26 2 L32 9 L38 2 L42 11 L52 6 L50 16 L60 14 L55 24 L62 26 L56 36 Q56 8 32 8 Q8 8 8 36 Z" fill="HC"/>';
+FRONT_HAIR['Undercut'] = 'M16 30 Q15 12 32 11 Q49 12 48 30 Q44 20 32 19 Q20 20 16 30 Z';
+FRONT_HAIR['Long bangs'] = 'M13 40 Q11 12 32 10 Q53 12 51 40 L46 30 L41 38 L36 28 L31 38 L26 28 L21 37 L17 29 Z';
+HAIRSTYLES.push('Wild mane', 'Undercut', 'Long bangs');
+Object.assign(HAIRHEX, {'Sky blue':'#7FB8E6', 'Sand':'#D8C08A'}); Object.assign(EYEHEX, {'Emerald':'#2E9E5B'});
+FACE_MARKS['Veins'] = '<path d="M18.5 33 L16 31 M18.5 36 L15.5 36 M45.5 33 L48 31 M45.5 36 L48.5 36" stroke="#8C6FB0" stroke-width=".8" stroke-linecap="round"/>';
+FACE_MARKS['Star mark'] = '<path d="M32 25.2 L33 27.3 L35.3 27.5 L33.6 29 L34.1 31.2 L32 30.1 L29.9 31.2 L30.4 29 L28.7 27.5 L31 27.3 Z" fill="#E8C547"/>';
+MARKS.push('Veins', 'Star mark');
+EXTRAS.push('Visor', 'Senbon');
+HAT_SVG['Fox mask'] = '<g transform="rotate(-18 50 20)"><path d="M42 12 L46 4 L50 11 L54 4 L58 12 Q60 24 50 28 Q40 24 42 12 Z" fill="#F4F4F0" stroke="#B9BDC4" stroke-width=".5"/><path d="M45 17 L48 18 M55 17 L52 18" stroke="#C8202C" stroke-width="1.2"/></g>';
+HAT_SVG['Cat ears'] = '<path d="M16 22 L18 8 L27 15 Z M48 22 L46 8 L37 15 Z" fill="#3A3F4B"/><path d="M18.5 18 L19.4 11 L24 15 Z M45.5 18 L44.6 11 L40 15 Z" fill="#EE9BB8"/>';
+HATS.splice(HATS.length - 1, 0, 'Fox mask', 'Cat ears');
+SHIRTS.splice(SHIRTS.length - 1, 0, 'Tracksuit', 'Sleeveless'); Object.assign(SHIRT_P, {'Tracksuit':'zip', 'Sleeveless':'plain'});
+
 function sheetFace(){
   var f = ensureFace(), h = head('Your face');
   h += '<div class="faceprev">' + faceSVG(f) + '</div>';
@@ -5836,7 +6038,8 @@ function captureOutcome(e0, n0, logLen){
 
 /* ================= TALK: AI CONVERSATIONS ================= */
 var sampleFn = null;
-try { if(window.claude && typeof window.claude.use === 'function') window.claude.use('sample').then(function(s){ sampleBackup = s || null; sampleFn = (S && S.settings && S.settings.noAI) ? null : sampleBackup; }, function(){ sampleFn = null; }); } catch(e){}
+try { if(window.claude && typeof window.claude.use === 'function') window.claude.use('sample').then(function(s){ sampleBackup = s ? langWrap(s) : null; sampleFn = (S && S.settings && S.settings.noAI) ? null : sampleBackup; }, function(){ sampleFn = null; }); } catch(e){}
+(function(){ if(onClaudeAI()) return; sampleBackup = buildSampler(); sampleFn = sampleBackup; })();
 var chat = {pid:null, busy:false, live:'', err:'', note:'', ctl:null};
 function openChat(p, mode, turns){ if(p.sealed){ warn(p.name + ' is sealed away and can’t talk.'); return; } chat.pid = p.id; chat.err = ''; chat.note = ''; chat.mode = mode || null; chat.turns = turns || 0; chat.used = {}; p.chat = p.chat || [];
   if(mode === 'gen') chatSys(p, p.name + ' is trapped in your genjutsu and must answer truthfully. ' + turns + ' questions before they break free.');
@@ -5863,14 +6066,302 @@ function buildChatPrompt(p){
 }
 function chatErr(code){
   if(code === 'not_granted'){ sampleFn = null; return 'Talking through Claude was turned off for this page, so conversations will use short canned lines instead. You can allow it from the page’s permissions.'; }
-  if(code === 'rate_limited') return 'Too many messages too fast. Wait a moment and try again.';
+  if(code === 'rate_limited') return apiViaProxy && apiDetail ? apiDetail : 'Too many messages too fast. Wait a moment and try again.';
   if(code === 'aborted') return 'Stopped.';
+  if(code === 'bad_key') return 'Anthropic rejected your API key' + (apiDetail ? ' (' + apiDetail + ')' : '') + '. Check it in ☰ → Settings.';
+  if(code === 'bad_model') return 'Anthropic doesn’t recognize that model name. Check it in ☰ → Settings.';
+  if(code === 'blocked') return 'The Claude proxy says this site isn’t allowed to use it. The proxy’s owner needs to add this site’s address to ALLOWED_ORIGINS.';
+  if(code === 'network') return apiViaProxy ? 'Couldn’t reach the Claude proxy. Check your internet connection, the proxy address, and that this site’s address is listed in the proxy’s ALLOWED_ORIGINS.' : 'Couldn’t reach Anthropic. Check your internet connection, or turn off any ad blocker for this page, and try again.';
+  if(code === 'api_error' && apiDetail) return (apiViaProxy ? 'The Claude proxy said: ' : 'Anthropic said: ') + apiDetail;
   return 'Couldn’t reach Claude just now. Try sending that again.';
 }
+/* ================= TALKING WITHOUT CLAUDE (GitHub pages, downloaded copies) ================= */
+var OFF = {
+  hi:/\b(hi|hello|hey|yo|sup|good (morning|evening|afternoon)|how are you|how have you been|what'?s up)\b/i,
+  bye:/\b(bye|goodbye|see you|later|gotta go|farewell)\b/i,
+  thanks:/\b(thanks|thank you|appreciate)\b/i,
+  insult:/\b(stupid|idiot|hate you|ugly|weak|loser|shut up|useless|pathetic|dumb)\b/i,
+  love:/\b(love|date|dating|go out|like you|crush|cute|beautiful|handsome|marry|kiss)\b/i,
+  teach:/\b(teach|show me|learn|jutsu|technique|train me|lesson)\b/i,
+  train:/\b(train|spar|fight|practice|stronger|workout|duel)\b/i,
+  money:/\b(money|ryo|lend|loan|pay|rich|poor|broke)\b/i,
+  mission:/\b(mission|team|quest|assignment|job)\b/i,
+  village:/\b(village|hokage|kazekage|mizukage|raikage|tsuchikage|kage|leader|council|elder)\b/i,
+  family:/\b(mother|father|mom|dad|family|clan|brother|sister|parents|child|kids?)\b/i,
+  war:/\b(war|enemy|battle|peace|akatsuki|danger|kill)\b/i,
+  dream:/\b(dream|goal|future|ambition|hope|someday)\b/i,
+  food:/\b(food|ramen|eat|hungry|dango|lunch|dinner)\b/i,
+  friend:/\b(friend|friends|buddy|best friend)\b/i
+};
+var VOICE = {
+  'Hagoromo Otsutsuki':{o:['Ah, ','Hm, ','My child, '],c:[' Peace begins with understanding.',' Bonds are stronger than any power.',' You carry my sons’ burden.']},
+  'Naruto Uzumaki':{o:['Hey! ','Believe it! ','Heh, '],c:[' Believe it!',' I never go back on my word!',' That’s my ninja way!']},
+  'Sasuke Uchiha':{o:['Hn. ','...','Tch. '],c:[' Don’t waste my time.',' Hmph.','']},
+  'Sakura Haruno':{o:['Hey, ','Oh! ','Honestly, '],c:[' Just don’t push yourself too hard.',' Okay?','']},
+  'Kakashi Hatake':{o:['Ah, ','Well, ','Maa, '],c:[' Sorry I’m late, by the way.',' Anyway.',' Don’t tell anyone I said that.']},
+  'Shikamaru Nara':{o:['Ugh, ','Troublesome... ','Hm. '],c:[' What a drag.',' It’s all so troublesome.',' ...Yeah.']},
+  'Might Guy':{o:['YOSH! ','Ha ha! ','Wonderful! '],c:[' The power of youth!',' Let’s give it everything!',' Never give up!']},
+  'Rock Lee':{o:['Yes! ','Understood! ','Wow! '],c:[' I will work even harder!',' Hard work beats talent!','']},
+  'Gaara':{o:['...','I see. ','Hm. '],c:[' I am still learning.','',' That matters to me.']},
+  'Tsunade':{o:['Hmph. ','Listen, ','Heh. '],c:[' Don’t make me repeat myself.',' Now, how about a drink?','']},
+  'Jiraiya':{o:['Ha ha! ','Well now, ','Hey, kid, '],c:[' I’m a super pervert, but I know people.',' Gahaha!','']},
+  'Itachi Uchiha':{o:['...','I see. ','Hm. '],c:[' Forgive me.',' That’s enough for now.','']},
+  'Hinata Hyuga':{o:['Um... ','Oh, ','I... '],c:[' I-if that’s okay...',' I’ll do my best.','']},
+  'Orochimaru':{o:['Kukuku... ','Ah, ','Interesting. '],c:[' How fascinating.',' Kukuku.','']},
+  'Killer Bee':{o:['Yo! ','Check it, ','Fool! '],c:[' Yeah! Rap time!',' Sucka, I’m cool!','']},
+  'Iruka Umino':{o:['Well, ','Hey, ','Listen, '],c:[' I’m proud of you.',' Take care of yourself.','']},
+  'Hiruzen Sarutobi':{o:['Ho ho, ','Ah, ','Hm, '],c:[' The Will of Fire burns in your generation.',' Let’s have some tea.','']}
+};
+function nin0(p){ return p.ninja !== false; }
+function offlineVoice(p){
+  var n = p.name; if(VOICE[n]) return VOICE[n];
+  var c = p.canon != null ? CANON[p.canon] : null, old = p.age >= 55, kid = p.age < 13;
+  if(kid) return {o:['Hey! ','Um, ','Wow, '],c:[' Wanna play ninja later?',' That’s so cool!','']};
+  if(old) return {o:['Hm, ','Well, ','Ah, '],c:[' When I was young, things were different.',' Take care of yourself.','']};
+  if(p.rel === 'Rival') return {o:['Hmph. ','Tch. ','Heh. '],c:[' Don’t think I’m going easy on you.',' I’ll beat you someday.','']};
+  if(p.rel === 'Mother' || p.rel === 'Father') return {o:['Oh, dear, ','Well, ','Hm, '],c:[' Eat something, you’re too thin.',' I’m proud of you.',' Be careful out there.']};
+  if(p.rel === 'Partner' || p.rel === 'Spouse') return {o:['Hey you, ','Oh, ','Mm, '],c:[' I’m glad it’s you.',' I love you.','']};
+  if(c && /Jonin|Kage|Special/.test(cRank(c, year()))) return {o:['Hm, ','Well, ','Listen, '],c:[' Keep your guard up.',' A ninja always stays ready.','']};
+  return {o:['Oh, ','Hey, ','Well, ','Hm, '],c:[' Anyway.',' Just thought I’d say.','']};
+}
+/* ---------- the richer built-in conversation ---------- */
+Object.assign(OFF, {
+  threat:/\b(fight me|kill you|i will kill|i'll kill|you will die|attack you|come at me|i'll destroy)\b/i,
+  apology:/\b(sorry|apolog|forgive me|my bad|my fault)\b/i,
+  follow:/\b(come with me|join me|follow me|work with me|partner up|be my (partner|teammate)|team up|join us)\b/i,
+  secret:/\b(secret|the truth|hiding|rumou?r|gossip)\b/i,
+  power:/\b(strong|stronger|strongest|power|sharingan|byakugan|rinnegan|mangekyo|kekkei|bloodline|chakra|tailed beast|jinchuriki)\b/i,
+  rank:/\b(promotion|promoted|chunin|jonin|genin|rank|exam|academy|graduate)\b/i,
+  advice:/\b(advice|help me|what should i|should i|need help|any tips|guidance)\b/i,
+  health:/\b(health|sick|hurt|injur|tired|exhausted|hospital|medic|wound)\b/i,
+  past:/\b(your past|childhood|remember when|memories|when you were young|growing up)\b/i,
+  who:/\b(who are you|about yourself|your story|tell me about you)\b/i,
+  joke:/\b(joke|funny|laugh|haha|lol|hilarious)\b/i,
+  hobby:/\b(hobby|hobbies|free time|for fun|favorite|what do you like)\b/i,
+  weather:/\b(weather|raining|sunny|snowing|cold today|hot today|tonight|weekend)\b/i
+});
+var TOPIC_ORDER = ['threat','insult','apology','love','teach','follow','secret','power','rank','advice','health','train','mission','money','village','family','war','dream','food','friend','past','who','joke','hobby','weather','thanks','bye','hi'];
+Object.assign(VOICE, {
+  'Temari':{o:['Hmph. ','Listen, ','Well, '],c:[' Don’t be such a pain.',' Got it?','']},
+  'Kankuro':{o:['Heh, ','Yo, ','Well, '],c:[' Puppets never lie.','',' Don’t touch my puppets.']},
+  'Neji Hyuga':{o:['Hm. ','Fate decides, but ','I see. '],c:[' Fate is not set in stone.',' Remember that.','']},
+  'Tenten':{o:['Hey, ','Ooh, ','Well, '],c:[' Weapons are always the answer!','',' Just don’t break anything.']},
+  'Ino Yamanaka':{o:['Hey, ','Ugh, ','Oh! '],c:[' Don’t forget your forehead protector.',' Just saying!','']},
+  'Choji Akimichi':{o:['Hm, ','Oh, ','Well, '],c:[' Got any chips?',' Nobody calls me fat.','']},
+  'Kiba Inuzuka':{o:['Hey! ','Yeah, ','Heh, '],c:[' Right, Akamaru?',' Woof!','']},
+  'Shino Aburame':{o:['...','I see. ','Hm. '],c:[' The insects agree.','',' That is all.']},
+  'Asuma Sarutobi':{o:['Hey, ','Well, ','Hm, '],c:[' Mind if I smoke?',' Let’s play some shogi sometime.','']},
+  'Kurenai Yuhi':{o:['Hello, ','Well, ','Hm, '],c:[' Take care of yourself.','',' Stay safe out there.']},
+  'Minato Namikaze':{o:['Oh, ','Well, ','Hey, '],c:[' You can count on me.',' Stay safe.','']},
+  'Kushina Uzumaki':{o:['Hey! ','Dattebane! ','Listen, '],c:[' Believe it, dattebane!',' Eat your vegetables!','']},
+  'Hashirama Senju':{o:['Ha ha, ','Well, ','Oh, '],c:[' The village is a dream we share.',' Let’s build a better world.','']},
+  'Tobirama Senju':{o:['Hm. ','Listen. ','Be careful. '],c:[' Rules exist for a reason.',' Don’t be careless.','']},
+  'Obito Uchiha':{o:['Heh. ','...','Hm. '],c:[' I’m nobody.',' This world is a lie.','']},
+  'Madara Uchiha':{o:['Hmph. ','...','Foolish. '],c:[' Peace is only a dream.',' Know your place.','']},
+  'Deidara':{o:['Hey, ','Yeah, ','Hm, '],c:[' Art is an explosion, un!',' Un!','']},
+  'Sasori':{o:['...','I see. ','Hm. '],c:[' Art is eternal.',' I dislike waiting.','']},
+  'Hidan':{o:['Hell, ','Tch, ','Hey, '],c:[' Lord Jashin is watching.',' Damn it.','']},
+  'Kisame Hoshigaki':{o:['Heh, ','Hm, ','Well, '],c:[' Samehada is hungry.',' Heh heh.','']},
+  'Zabuza Momochi':{o:['Hmph. ','Heh. ','Tch. '],c:[' Don’t get in my way.','',' Silent killing is an art.']},
+  'Haku':{o:['Hello, ','Oh, ','Um, '],c:[' I only wish to be useful.','',' Zabuza-sama needs me.']},
+  'Mei Terumi':{o:['Hello, ','Well, ','Oh, '],c:[' Don’t be shy, dear.','',' I get what I want.']},
+  'Konan':{o:['Hm. ','I see. ','Well, '],c:[' Paper can become anything.','',' Hope is not lost.']},
+  'Yamato':{o:['Well, ','Ah, ','Hm, '],c:[' I’ll keep it in mind.','',' Wood Style isn’t a toy.']},
+  'Shisui Uchiha':{o:['Hey, ','Ah, ','Well, '],c:[' I believe in the village.','',' Don’t give up on your clan.']},
+  'Danzo Shimura':{o:['Hm. ','I see. ','Listen. '],c:[' The village comes first.',' Sacrifices are necessary.','']},
+  'Kabuto Yakushi':{o:['Hm, ','Well, ','Ah, '],c:[' Who am I, really?','',' Interesting.']}
+});
+var SIG = {
+  'Naruto Uzumaki':{dream:['My dream? I’m going to be Hokage, believe it! Then everyone has to acknowledge me.'],village:['This village is my home. I’ll protect everyone in it, no matter what.'],train:['Training? Yeah! I’ll never lose to anyone!','You want to spar? Bring it on!'],friend:['Friends are the most important thing in the world to me.'],who:['I’m Naruto Uzumaki, the next Hokage! Remember it!'],past:['It was lonely growing up, but I never gave up.'],love:['Wh-what? I’ve never thought about stuff like that!'],food:['Ramen! Ichiraku’s, obviously. Miso, extra pork.']},
+  'Sasuke Uchiha':{dream:['I have one goal, and I won’t stop until it’s done.'],village:['The village means little to me. My path is my own.'],train:['If you want to get stronger, stop talking and train.'],friend:['I don’t need friends. ...Not that I mind them, I suppose.'],who:['I’m an Uchiha. That’s all you need to know.'],past:['I don’t talk about the past.'],love:['Hmph. Don’t say strange things.']},
+  'Sakura Haruno':{dream:['I want to become a medical ninja strong enough to protect everyone.'],village:['I love this village. I’d fight for it.'],train:['I’ve been training with Lady Tsunade. Want to see my punch?'],friend:['My friends are what keep me going.'],who:['I’m Sakura Haruno, medical ninja in training.'],love:['Oh! Um... I don’t know what to say.'],health:['Let me look at that. Hold still, I’ll heal you.']},
+  'Kakashi Hatake':{dream:['Dreams? I’ve lost most of mine. But I want to see my students surpass me.'],village:['Rules matter, but those who abandon their friends are worse than scum.'],train:['Training is good. But a good ninja knows when to rest, too.'],who:['Me? I’m a ninja who’s always late. Nothing more.'],food:['I like grilled fish with salt, if you’re asking.'],past:['I’ve lost a lot of people. That’s all I’ll say.']},
+  'Shikamaru Nara':{dream:['My dream is a normal life: marry an average girl, have two kids, and die before my wife.'],village:['The village is fine. Just don’t make it any more troublesome.'],train:['Training is a drag. But fine, if you insist.'],who:['I’m Shikamaru. A lazy ninja. Don’t expect much.'],love:['Don’t ask me about girls. They’re all too troublesome.'],food:['I’d rather lie down and watch clouds than eat.']},
+  'Might Guy':{dream:['My dream is to see every young ninja’s youth burn brightly!'],train:['TRAINING! Yes! Let us run a hundred laps around the village!'],village:['I would give my life for this village and the power of youth!'],who:['I am Might Guy, the Leaf’s noble blue beast!']},
+  'Rock Lee':{dream:['I will become a splendid ninja without using any ninjutsu!'],train:['A thousand push-ups! Let’s begin!'],who:['I’m Rock Lee, and hard work is my ninja way!'],village:['The village is my family. I’ll protect it with all my strength!']},
+  'Gaara':{dream:['I want to protect the village that once feared me.'],village:['Now I am Kazekage. The Sand is my family.'],who:['I am Gaara of the Sand.'],friend:['I once didn’t understand what a friend was. Now I do.'],train:['I’ll spar with you. Don’t hold back.']},
+  'Tsunade':{village:['Being Hokage is a heavy burden. Don’t ever envy it.'],dream:['Dreams are what got my loved ones killed. But I’ve learned to believe again.'],train:['Want to train? Don’t cry when my punches land.'],food:['Food? I prefer sake.'],health:['Let me see. As a medic, I won’t let you walk around like this.']},
+  'Jiraiya':{dream:['I’ll finish my great novel, then find the child of prophecy.'],village:['I love the village. That’s why I travel: to keep it safe.'],love:['Ha! Don’t ask a super pervert for love advice. ...Well, ask anyway.'],who:['I’m the legendary Toad Sage, Jiraiya! Gahaha!']},
+  'Itachi Uchiha':{dream:['I only wish for the village’s peace, and for my brother’s safety.'],village:['Peace is worth every sacrifice.'],who:['I’m only a shinobi, nothing more.']},
+  'Hinata Hyuga':{dream:['I want to become strong, like Naruto-kun.'],village:['I love this village. Everyone here is precious to me.'],love:['I-I don’t know what to say...'],who:['I’m Hinata Hyuga. I’m still trying to become stronger.']},
+  'Orochimaru':{dream:['My dream? To learn all the secrets of this world. Kukuku.'],village:['The village is nothing but a cage for ambition.'],who:['Orochimaru. A scientist, you might say.'],power:['Power is merely the first step toward immortality.']},
+  'Iruka Umino':{dream:['I want to see all my students grow up safe and strong.'],village:['A ninja protects the village and its people. I’ll always teach that.'],train:['If you want, I’ll go over the basics with you.'],who:['I’m an Academy instructor. A teacher, mostly.']},
+  'Hiruzen Sarutobi':{village:['The Will of Fire is what keeps our village alive.'],dream:['I hope the next generation will be better than mine.'],who:['I’m only an old man who loves his village.']},
+  'Killer Bee':{dream:['My dream, yo? To be the greatest rapper ever, fool!'],who:['I’m Killer Bee, the Eight-Tails’ brother, yeah!'],train:['Train? Yeah! Rap and training, that’s my life!']},
+  'Neji Hyuga':{dream:['I want to change the Hyuga clan for the better.'],village:['This village gave me a reason to believe in myself.'],train:['Training builds resolve. Let’s go.']},
+  'Temari':{village:['The Sand is a harsh place, but it’s my home.'],train:['Fine. Don’t get mad when I blow you away.'],who:['Temari of the Sand. Gaara’s sister, Kazekage’s sister.']}
+};
+Object.assign(SIG['Sasuke Uchiha'], {hi:['Hn. It’s you.','...What do you want?']}); Object.assign(SIG['Itachi Uchiha'], {hi:['Hello. Please, sit.','...You’ve come a long way.']}); Object.assign(SIG['Gaara'], {hi:['Hello. I’m glad you came.','...Hm. Good to see you.']});
+Object.assign(SIG['Orochimaru'], {hi:['Kukuku... what a pleasant surprise.']}); Object.assign(SIG['Shikamaru Nara'], {hi:['Yo. Don’t ask me to do anything troublesome.']}); Object.assign(SIG['Might Guy'], {hi:['YOSH! GREETINGS, MY FRIEND!']});
+Object.assign(SIG['Rock Lee'], {hi:['Hello! Your youth shines today!']}); Object.assign(SIG['Naruto Uzumaki'], {hi:['Hey! Wanna get some ramen?','Yo! Believe it, I was just about to look for you!']}); Object.assign(SIG['Kakashi Hatake'], {hi:['Yo. Sorry I’m late. I got lost on the path of life.']});
+Object.assign(SIG['Tsunade'], {hi:['Hmph. What is it this time?']}); Object.assign(SIG['Jiraiya'], {hi:['Hey, kid! Come to hear about my latest research?']}); Object.assign(SIG['Hinata Hyuga'], {hi:['O-oh, hello...']});
+Object.assign(SIG['Killer Bee'], {hi:['Yo yo yo! What’s up, fool!']}); Object.assign(SIG['Iruka Umino'], {hi:['Oh, hello! Staying out of trouble?']});
+var OPIN = {
+  'Kakashi Hatake|Naruto Uzumaki':'Naruto? He’s my student, and someday he’ll surpass us all.',
+  'Kakashi Hatake|Sasuke Uchiha':'Sasuke carries a lot of pain. I see too much of myself in him.',
+  'Kakashi Hatake|Sakura Haruno':'Sakura’s grown into a fine medical ninja. I’m proud of her.',
+  'Kakashi Hatake|Might Guy':'Guy? Great guy. A bit loud. Don’t tell him I said that.',
+  'Naruto Uzumaki|Sasuke Uchiha':'Sasuke’s my best friend and my rival. I’ll bring him back no matter what.',
+  'Naruto Uzumaki|Sakura Haruno':'Sakura-chan is awesome! Scary when she’s mad, though.',
+  'Sasuke Uchiha|Naruto Uzumaki':'Naruto... that idiot never gives up. It’s annoying.',
+  'Sasuke Uchiha|Itachi Uchiha':'My brother. I don’t want to talk about him.',
+  'Itachi Uchiha|Sasuke Uchiha':'Sasuke is my foolish little brother. I only want him to live well.',
+  'Sakura Haruno|Sasuke Uchiha':'Sasuke... I’ve cared about him for a long time.',
+  'Sakura Haruno|Naruto Uzumaki':'Naruto’s loud and reckless, but he’s the most dependable person I know.',
+  'Shikamaru Nara|Naruto Uzumaki':'Naruto? Troublesome guy, but he makes people believe the impossible.',
+  'Shikamaru Nara|Temari':'Temari? Bossy. Troublesome. ...Fine, she’s all right.',
+  'Temari|Shikamaru Nara':'That lazy genius? He drives me crazy.',
+  'Gaara|Naruto Uzumaki':'Naruto pulled me out of the darkness. I owe him everything.',
+  'Might Guy|Rock Lee':'Lee is my greatest student! His youth burns brighter than anyone’s!',
+  'Might Guy|Kakashi Hatake':'Kakashi is my eternal rival! The score is 50 to 49, in my favor, naturally!',
+  'Rock Lee|Might Guy':'Guy-sensei is the greatest teacher in the world!',
+  'Tsunade|Jiraiya':'Jiraiya? That perverted old fool. ...He’s still the best friend I’ve got.',
+  'Tsunade|Naruto Uzumaki':'That brat reminds me of my brother. I believe in him.',
+  'Jiraiya|Tsunade':'Tsunade’s a tough woman. And no, I won’t say anything about her gambling.',
+  'Jiraiya|Orochimaru':'Orochimaru was my teammate once. It pains me to see what he became.',
+  'Orochimaru|Sasuke Uchiha':'Sasuke... such a promising vessel. Kukuku.',
+  'Hinata Hyuga|Naruto Uzumaki':'N-Naruto-kun? He’s... he’s the reason I never gave up.',
+  'Iruka Umino|Naruto Uzumaki':'Naruto was my troublemaker student. I’m proud of him beyond words.',
+  'Hiruzen Sarutobi|Orochimaru':'Orochimaru was my student. I’ll carry that regret for the rest of my life.',
+  'Neji Hyuga|Hinata Hyuga':'Lady Hinata is stronger than she believes.',
+  'Neji Hyuga|Rock Lee':'Lee’s effort is something I can’t help but respect.',
+  'Killer Bee|Naruto Uzumaki':'Naruto’s a good kid, yo! Got a heart like a beat, sucka!'
+};
+var RIVALS = [['Naruto Uzumaki','Sasuke Uchiha'],['Might Guy','Kakashi Hatake'],['Shikamaru Nara','Temari']];
+function areRivals(a, b){ return RIVALS.some(function(r){ return (r[0] === a && r[1] === b) || (r[0] === b && r[1] === a); }); }
+var ALIAS = {'Might Guy':'Guy','Killer Bee':'Bee','Rock Lee':'Lee','Zabuza Momochi':'Zabuza'};
+function mentionedFolks(text, p){
+  var found = [];
+  CANON.forEach(function(c){ if(c.n === p.name || !cAlive(c, year())) return; var key = ALIAS[c.n] || c.n.split(' ')[0]; if(key.length < 3) return;
+    if(new RegExp('\\b' + key + '\\b').test(text) && !found.some(function(f){ return f.n === c.n; })) found.push({n:c.n, c:c}); });
+  S.people.forEach(function(q){ if(q.id === p.id || !q.alive || q.pet) return; var key = q.name.split(' ')[0]; if(key.length < 3) return;
+    if(new RegExp('\\b' + key + '\\b').test(text) && !found.some(function(f){ return f.n === q.name; })) found.push({n:q.name, p:q}); });
+  return found;
+}
+function opinionOf(p, x){
+  var key = p.name + '|' + x.n; if(OPIN[key]) return OPIN[key];
+  var xr = x.c ? cRank(x.c, year()) : npcRank(x.p), xv = (x.c ? x.c.v : (x.p.village || S.village)).replace('Hidden ', ''), xp = x.c ? cPower(x.c, year()) : personPw(x.p), me = personPw(p), first = x.n.split(' ')[0];
+  var rel = xp > me + 5 ? 'Stronger than me, I’d say.' : xp < me - 5 ? 'Not someone I’d worry about in a fight.' : 'We’re about evenly matched, I think.';
+  var lead = x.c && cRank(x.c, year()) === 'Kage' ? first + '? They lead the ' + xv + '. I’ll say that’s a heavy job.' : pick([first + '? A ' + xr.toLowerCase() + ' of the ' + xv + '. ' + rel, 'I’ve heard of ' + first + '. ' + xr + ' of the ' + xv + '. ' + rel, first + '... ' + (x.p && x.p.bond >= 60 ? 'a good person, from what I know of them.' : 'I can’t say I know them well. ' + rel)]);
+  return lead;
+}
+function lifeRemark(p){
+  var first = S.name.split(' ')[0], out = [], sp = S.people.find(function(q){ return q.alive && q.rel === 'Spouse' && q.id !== p.id; }), kids = S.people.filter(function(q){ return q.alive && q.rel === 'Child' && q.id !== p.id; });
+  if(S.rank === 'Missing-nin') out.push(p.bond >= 70 ? 'I know what they say about you. I don’t care. You’re still you.' : 'You’re a missing-nin now. I shouldn’t even be speaking with you.');
+  if(S.rank === 'Kage') out.push('I still can’t get used to you being ' + kageTitle(S.village) + '.');
+  if(S.fame >= 60) out.push('Everyone is talking about you these days.');
+  if(S.noto >= 50) out.push(fearText(p) ? 'You make people nervous, you know that?' : 'There are rumors that you’re dangerous. I don’t believe them.');
+  if(S.age < 13 && p.age >= 18) out.push('You’re quite the little ninja for your age.');
+  if(typeof sharingan === 'function' && sharingan()) out.push('Those eyes of yours... I can never tell what you’re thinking.');
+  if(S.beast) out.push(p.bond >= 50 ? 'I know what sleeps inside you. I’m not afraid of it.' : 'There’s something inside you that unsettles me.');
+  if(sp) out.push('How is ' + sp.name.split(' ')[0] + ' doing?');
+  if(kids.length) out.push('How are the kids?');
+  if(S.health < 40) out.push('You look awful. Have you been to the hospital?');
+  if(S.happy < 30) out.push('You seem down lately. Do you want to talk about it?');
+  if(S.money > 5000000) out.push('I hear you’ve done well for yourself.');
+  if(S.flags.position) out.push('Being ' + posName().toLowerCase() + ' suits you.');
+  if(S.clanLeader) out.push('Leading the ' + S.clan + ' clan can’t be easy.');
+  if(S.myOrg) out.push('How is ' + S.myOrg.name + ' doing?');
+  p.mem = p.mem || {n:0, t:{}, said:[], r:{}};
+  var fresh = out.filter(function(t){ return !p.mem.r[t]; }); if(!fresh.length) return '';
+  var t = pick(fresh); p.mem.r[t] = 1; return t;
+}
+function topicPool(p, topic){
+  var first = S.name.split(' ')[0], tier = p.bond < 25 ? 0 : p.bond < 50 ? 1 : p.bond < 75 ? 2 : 3, ninja = p.ninja !== false, k = kageTitle(S.village), me = personPw(p), you = power();
+  var P = {
+    hi:[['oh. It’s you.','what do you want?','make it quick.'],['good to see you, ' + first + '. How’s your day going?','I was just thinking about you. What’s new?','things have been busy. How about you?'],['there you are! I was hoping you’d stop by.','it’s always good to see you, ' + first + '.','you’re just in time. I was getting bored.'],['I was hoping it’d be you. How are you, really?','my favorite person to run into. What’s on your mind?','you always make my day better, ' + first + '.']][tier],
+    bye:[['finally.','fine. Go.'],['take care, ' + first + '. Come find me again.','see you around.','don’t be a stranger.'],['stay safe out there, ' + first + '.','come back soon, okay?','I’ll be here when you need me.'],['don’t you dare get hurt out there. Come back in one piece.','go on, before I stop you. Be safe, ' + first + '.','I’ll miss you already.']][tier],
+    thanks:[['hmph. Don’t get used to it.','whatever.'],['don’t mention it.','you’d do the same for me.','glad I could help.'],['anytime, ' + first + '. That’s what friends are for.','I’d do anything for you, you know that.'],['you never have to thank me. I’m always on your side.','seeing you smile is thanks enough.']][tier],
+    insult:['that was uncalled for. I’ll pretend I didn’t hear it.','watch your mouth.','wow. That actually hurt.','say that again and see what happens.','I expected better from you, ' + first + '.'],
+    threat:['you’d better be joking.','think very carefully before you try that.','I’m not afraid of you, ' + first + '.','put your hand down and walk away.'],
+    apology:tier < 2 ? ['I’ll think about it.','sorry won’t fix everything, but it’s a start.','fine. Just don’t do it again.'] : ['it’s okay. We all make mistakes.','you don’t have to apologize to me. I forgive you.','forget it. We’re fine, ' + first + '.'],
+    love:['Mother','Father','Sibling','Child'].indexOf(p.rel) >= 0 ? ['I love you too, ' + first + '. Always.','you know I do. Never forget it.','that means a lot to hear.'] : (p.rel === 'Partner' || p.rel === 'Spouse') ? ['I love you too, ' + first + '.','you make me happier than you know.','I never get tired of hearing that.'] : tier < 2 ? ['...you’re making this awkward. I don’t really know you well enough.','that’s a surprising thing to say. Give me time.','I’m flattered, but I don’t think I’m ready for that.'] : ['...you’re making this awkward. But, well, I don’t mind it.','I’ve been wondering when you’d say something.','that’s sweet. I’ve thought about it too.','you’ve got a way of making my heart race, ' + first + '.'],
+    teach:[ninja ? 'if you’re serious, I’ll show you what I know.' : 'I’m no ninja, so I’d only get in your way.','teaching takes trust. We’ll see how you do.','show me you’re ready first, and then we’ll talk.'],
+    follow:ninja ? ['I have my own path, but I’ll think about it.','you’re asking me to follow you? That’s a big request.','if I do, I want to know where we’re heading.'] : ['I’m not a fighter. I’d only slow you down.','that’s not my kind of life, ' + first + '.'],
+    secret:['everyone has secrets. I keep mine for a reason.','if I told you, it wouldn’t be a secret.','I know a few things, but not everything is mine to share.','rumors are usually half true. Which half is the question.'],
+    power:you > me + 6 ? ['you’ve gotten really strong, ' + first + '. Stronger than me now, I’d say.','I can feel how much power you have. It’s... a lot.','you’ve passed me, haven’t you? I’m impressed.'] : you < me - 6 ? ['you’ve got some way to go, but you’re improving.','power isn’t everything. Control matters more.','keep training. You’ll get there.'] : ['we’re about even, I think. Want to find out for sure?','you’ve got real strength. So do I.','power is only useful if you know why you want it.'],
+    rank:lvl() === 0 ? ['the Academy is where it all starts. Study hard.','everyone starts somewhere. Don’t rush it.'] : S.rank === 'Genin' ? ['Genin missions are tough, but they make you grow. Chunin is next.','keep at it. The Chunin Exams will test everything you’ve learned.'] : lvl() <= 3 ? ['already that high? Jonin is next, and it takes real strength.','you’re going places. Don’t let it go to your head.'] : S.rank === 'Kage' ? ['you’re ' + k + ' now. What do you need from an old friend?','the hat is heavy, isn’t it?'] : S.rank === 'Missing-nin' ? ['a missing-nin has no rank, only a bounty.','you gave up your rank. Was it worth it?'] : ['not many make it that far. Be proud.','ranks aren’t everything. What you do with them is.'],
+    advice:S.health < 50 ? ['first, take care of your health. You can’t help anyone if you collapse.','get some rest, then we’ll talk about everything else.'] : ['start small, think it through, and don’t be afraid to ask for help.','whatever you decide, don’t betray your own heart.','if you’re unsure, talk to someone you trust. Like you just did.','break the problem into pieces. It looks smaller that way.'],
+    health:S.health < 40 ? ['you look awful. Go to the hospital, now.','you’re hurt badly. Don’t be stubborn about it.'] : S.health >= 80 ? ['you look healthy to me. Keep it up.','you’re in good shape. Don’t take it for granted.'] : ['get some rest. A tired ninja is a careless one.','you’re not at your best. Take it easy for a bit.'],
+    train:['training is how we grow. I’m in if you are.','you want to spar? Don’t come crying to me.','a little practice never hurt anyone.','let’s see what you’ve got.'],
+    mission:['missions keep the village running. Stay sharp out there.','teamwork is everything on a mission.','I’ve heard the missions are getting tougher lately.','be careful on the dangerous ones. No mission is worth dying for.'],
+    money:['money’s tight for everyone these days.','I might be able to spare a little, if you really need it.','ryo comes and goes. People matter more.'],
+    village:['the ' + S.village + ' is my home. I’d protect it with my life.','the ' + k + ' has a heavy burden, whoever it is.','a village is only as strong as its people.','things are changing around here, and not always for the better.'],
+    family:['family means everything, doesn’t it?','my clan has its own history, good and bad.','I think about my family a lot.','you can’t choose your family, but you can choose how to treat them.'],
+    war:['war takes more than it gives. I hope you never see too much of it.','peace is worth fighting for, even if it costs us.','the world is a dangerous place. Stay alert.','every war starts with someone who thinks they’re right.'],
+    dream:['I used to have big dreams. What’s yours?','a goal gives you a reason to keep going.','if you work for it, someday you’ll get there.','dreams are easy. Doing the work is the hard part.'],
+    food:['now that you mention it, I am a little hungry.','nothing beats a good bowl of ramen after training.','let’s grab something to eat sometime.','I know a little place with great dango. Remind me.'],
+    friend:['friends are what get a ninja through the hard days.','I’m glad we’ve gotten to know each other.','a true friend is worth more than any jutsu.','real friends tell you the truth, even when it hurts.'],
+    past:['I’ve seen a lot. Some of it I’d like to forget.','those were different times. Simpler, maybe.','memories are heavy sometimes, but they make us who we are.','I don’t talk about the past much. But for you, I’ll try.'],
+    who:[ninja ? 'I’m a ' + npcRank(p).toLowerCase() + ' of the ' + (p.village || S.village).replace('Hidden ', '') + '. Nothing fancy.' : 'I’m just a regular person trying to get by.','I’m ' + p.name + '. Not much of a story, really.','what do you want to know? I’m an open book. Mostly.'],
+    joke:['ha! That’s a good one. I needed that.','you’re not funny, but I appreciate the effort.','okay, that actually made me laugh.','I’ve heard better, but I’ll give you points for trying.'],
+    hobby:['I like quiet afternoons and a good cup of tea.','honestly, training takes up most of my time. Does that count?','I enjoy walking around the village at sunset.','cooking, believe it or not. I’m decent at it.'],
+    weather:['it’s a nice day for a walk.','this weather makes me want to stay in with some tea.','rain or shine, a ninja’s work never stops.','the weather reminds me of old times, somehow.'],
+    question:['that’s a good question. I’m not sure I have an answer.','hm. I’d have to think about that.','you ask hard questions, ' + first + '.','honestly, I don’t know. What do you think?'],
+    other:['that’s an interesting thing to say.','I hadn’t thought about it like that.','tell me more.','honestly, I’m not sure what to make of that, but go on.','hm. I’ll have to think about that one.']
+  };
+  return P[topic] || P.other;
+}
+function offlineReply(p, text, aside){
+  text = String(text || '');
+  if(chat.mode === 'gen' && !aside){ var gv = ['...I can’t lie to you. I’m a ' + npcRank(p).toLowerCase() + ' of the ' + (p.village || S.village) + ', and honestly, I trust you about ' + Math.round(p.bond) + ' out of 100.','Everything is so hazy... Ask me anything. I’ll tell you the truth.','I... I don’t know why I’m telling you this, but my power is about ' + Math.round(personPw(p)) + '.'];
+    return {text:pick(gv), tags:'', bond:-1}; }
+  if(chat.mode === 'koto' && !aside) return {text:pick(['Of course. It was my own idea all along.','Yes. I’ll do it right away.','I was just thinking the same thing.']), tags:'', bond:0};
+  p.mem = p.mem || {n:0, t:{}, said:[], r:{}}; var mem = p.mem, first = S.name.split(' ')[0], ninja = p.ninja !== false;
+  var topic = 'other'; for(var i = 0; i < TOPIC_ORDER.length; i++) if(OFF[TOPIC_ORDER[i]].test(text)){ topic = TOPIC_ORDER[i]; break; }
+  if(/^\s*(hi|hello|hey|yo|sup|good (morning|evening|afternoon))\b/i.test(text) && text.trim().split(/\s+/).length <= 5 && ['insult','threat'].indexOf(topic) < 0) topic = 'hi';
+  var folks = mentionedFolks(text, p);
+  if(topic === 'love' && folks.length && !/\b(you|me|us|we)\b/i.test(text)) topic = 'person';
+  if(folks.length && ['other','who','friend','village','power','rank','dream','past','secret','joke','hobby','weather','advice','mission','war'].indexOf(topic) >= 0) topic = 'person';
+  if(topic === 'other' && /\?/.test(text)) topic = 'question';
+  var sig = SIG[p.name] && SIG[p.name][topic], pool, line;
+  if(topic === 'person') line = opinionOf(p, folks[0]);
+  else { pool = topicPool(p, topic); if(sig && chance(topic === 'hi' ? 0.95 : 0.7)) pool = sig.concat(chance(0.3) && topic !== 'hi' ? pool : []); }
+  if(topic !== 'person'){ var fresh = pool.filter(function(l){ return mem.said.indexOf(l) < 0; }); line = pick(fresh.length ? fresh : pool); }
+  if(p.bond < 25 && ['insult','threat','apology','bye'].indexOf(topic) < 0 && chance(0.4)) line = pick(['I don’t really know you well enough for that.','why are you asking me?','hm. Maybe.']);
+  var tags = '', has = function(t){ return chatActions(p).some(function(x){ return x[0] === t; }); };
+  if(!aside){
+    if(topic === 'teach' && typeof teachList === 'function' && teachList(p).length && p.bond >= 40){ var tj = teachList(p)[0]; line = pick(['alright. I’ll show you ' + tj + '. Watch closely.','you’ve earned it. Here is how ' + tj + ' works.','fine. Pay attention, because I’ll only show ' + tj + ' once.']); tags += '\n[do:teach:' + tj + ']'; }
+    else if(topic === 'teach') line = pick([ninja ? 'I’m not ready to teach you anything yet. Earn a little more of my trust first.' : 'I’m no ninja, so I’d only get in your way.','I don’t know a technique worth passing on, not yet.','ask me again once we know each other better.']);
+    else if(topic === 'love' && /\b(marry|marriage|wife|husband|wed)\b/i.test(text) && has('marry') && p.bond >= 70) { line = pick(['yes. A thousand times yes.','I thought you’d never ask. Yes!']); tags += '\n[do:marry]'; }
+    else if(topic === 'love' && has('date') && p.bond >= 55) { line = pick(['...you’re making this awkward. But, well, I’d like that.','I’ve been wondering when you’d say something. Yes.','okay. Let’s see where this goes.']); tags += '\n[do:date]'; }
+    else if(topic === 'friend' && has('friend') && p.bond >= 35){ line = pick(['sure. We’re friends, then.','I’d like that. Consider us friends.']); tags += '\n[do:friend]'; }
+    else if(topic === 'money' && has('money') && p.bond >= 50){ line = pick(['here, take this. Don’t spend it all in one place.','I can spare a little. Pay me back someday.']); tags += '\n[do:money]'; }
+    else if(topic === 'train' && has('train') && p.bond >= 30){ line = pick(['alright, let’s train. Give it everything.','fine. Don’t hold back, ' + first + '.']); tags += '\n[do:train]'; }
+    else if(topic === 'mission' && has('mission')){ line = 'as a matter of fact, I have a task that needs someone like you. Consider it a special mission.'; tags += '\n[do:mission]'; }
+    else if((topic === 'apology' || topic === 'advice') && has('pardon') && chance(clamp(0.2 + p.bond/150 + S.rep/300, 0.1, 0.7))){ line = 'you’ve caused a lot of trouble. But the village is short on talent. You’re pardoned. Come home.'; tags += '\n[do:pardon]'; }
+    else if((topic === 'follow' || /\b(join|org|organization|syndicate)\b/i.test(text)) && S.myOrg && has('join') && p.bond >= 50){ line = pick(['if you’re asking, then yes. I’ll join ' + S.myOrg.name + '.','you’ve earned my trust. Count me in.']); tags += '\n[do:join]'; }
+  }
+  // tone: repeats, life remarks, voice
+  var v = offlineVoice(p), out = '', full = topic === 'person' || !!(sig && sig.indexOf(line) >= 0);
+  if(['hi'].indexOf(topic) >= 0 && (p.chat || []).filter(function(m){ return m.r === 'me'; }).length > 1) line = pick(['hello again.','back already? What is it this time?','still here, ' + first + '.']);
+  else if(mem.t[topic] && topic !== 'person' && topic !== 'hi' && chance(0.35)){ full = false; line = pick(['you keep bringing this up, but ','like I said before, ','we’ve been over this, but ']) + line.charAt(0).toLowerCase() + line.slice(1); }
+  out = (!full && !(topic === 'love' && p.bond >= 50) && chance(0.7) ? pick(v.o) : '') + line;
+  if(!aside && !tags && !/[?]$/.test(line) && ['insult','threat','bye','teach','person'].indexOf(topic) < 0 && chance(0.4)){ var rm = lifeRemark(p); if(rm) out += ' ' + rm; }
+  if(!/[?]$/.test(line) && chance(0.35)) out += pick(v.c);
+  out = out.replace(/(^|[.!?…]\s+)([a-z])/g, function(m, a, b){ return a + b.toUpperCase(); }).replace(/\s{2,}/g, ' ').trim();
+  mem.n++; mem.t[topic] = (mem.t[topic] || 0) + 1; mem.said.push(line); if(mem.said.length > 14) mem.said.shift();
+  var shift = {insult:-4, threat:-6, thanks:1, love:1, apology:1, friend:2, hi:(p.chat || []).length < 3 ? 1 : 0, joke:1, advice:1, train:1}[topic] || 0;
+  return {text:out, tags:tags, bond:shift};
+}
+function groupReact(p, ppl){
+  var log = gchat.log, prev = null; for(var i = log.length - 1; i >= 0; i--){ if(log[i].r === 'me') break; if(log[i].who && log[i].who !== p.name){ prev = log[i]; break; } }
+  if(!prev || !chance(0.55)) return '';
+  var f = prev.who.split(' ')[0], dis = areRivals(p.name, prev.who) || chance(0.2);
+  return dis ? pick(['Tch, I don’t agree with that, ' + f + '. ','Hm, I wouldn’t put it that way, ' + f + '. ','Not so fast, ' + f + '. ']) : pick(['I’ll second that, ' + f + '. ',f + ' has a point. ','Right, ' + f + '. ','Ha, that’s ' + f + ' for you. ']);
+}
+
+function kotoTagFor(text){ return /\b(money|ryo|give|pay)\b/i.test(text) ? '[do:money]' : /\b(teach|show|train)\b/i.test(text) ? '[do:teach]' : /\b(join|follow|serve)\b/i.test(text) ? '[do:join]' : '[do:loyal]'; }
+function offlineChat(p, text){
+  chat.busy = true; chat.live = ''; chat.err = ''; chat.note = ''; p.chat = (p.chat || []).concat([{r:'me', t:text}]).slice(-24); rerenderChat();
+  setTimeout(function(){ var r = offlineReply(p, text, !!chat.mode), tag = chat.mode === 'koto' ? '\n' + kotoTagFor(text) : r.tags;
+    finishChat(p, r.text + tag + '\n[bond:' + r.bond + ']'); }, 450);
+}
+
 function sendChat(text){
   var p = chatPerson(); text = String(text || '').trim().slice(0, 300);
   if(!p || !text || chat.busy) return;
-  if(!sampleFn){ chat.err = 'Talking through Claude isn’t available here.'; rerenderChat(); return; }
+  if(!sampleFn){ offlineChat(p, text); return; }
   p.chat = (p.chat || []).concat([{r:'me', t:text}]).slice(-24);
   chat.busy = true; chat.live = ''; chat.err = ''; chat.note = '';
   var ctl = new AbortController(); chat.ctl = ctl;
@@ -5884,7 +6375,7 @@ function finishChat(p, raw){
   if(reply) p.chat.push({r:'them', t:reply});
   p.chat = p.chat.slice(-24);
   if(chat.mode){ if(chat.mode === 'koto'){ var dm = /\[do:\s*(money|teach|join|loyal)\s*\]/i.exec(raw || ''); if(dm) applyKoto(p, dm[1].toLowerCase()); } chat.turns--; if(chat.turns <= 0) endMind(p); }
-  else { var dn = /\[do:\s*([a-z_]+)(?:\s*:\s*([^\]]+))?\s*\]/i.exec(raw || ''); if(dn) applyChatAction(p, dn[1].toLowerCase(), dn[2] ? dn[2].trim() : null); if(!dn || dn[1].toLowerCase() !== 'teach') autoTeach(p, raw); if(m){ var d = clamp(parseInt(m[1], 10), -6, 6); if(d){ p.bond = clamp(p.bond + d, 0, 100); chat.note = (d > 0 ? 'Bond +' : 'Bond ') + d; } } }
+  else { var dn = /\[do:\s*([a-z_]+)(?:\s*:\s*([^\]]+))?\s*\]/i.exec(raw || ''); if(dn) applyChatAction(p, dn[1].toLowerCase(), dn[2] ? dn[2].trim() : null); if(sampleFn && (!dn || dn[1].toLowerCase() !== 'teach')) autoTeach(p, raw); if(m){ var d = clamp(parseInt(m[1], 10), -6, 6); if(d){ p.bond = clamp(p.bond + d, 0, 100); chat.note = (d > 0 ? 'Bond +' : 'Bond ') + d; } } }
   save(); rerenderChat();
 }
 function scrollChat(){ var cl = document.getElementById('chatlog'); if(cl) cl.scrollTop = cl.scrollHeight; }
@@ -5895,14 +6386,15 @@ function sheetChat(){
   if(!p) return head('Talk') + '<p>They aren’t around anymore.</p>';
   var first = p.name.split(' ')[0];
   var h = head('Talking with ' + p.name) + (faceOfPerson(p) ? '<div style="display:flex;justify-content:center;margin:-4px 0 8px">' + avHTML(faceOfPerson(p), 64) + '</div>' : '');
-  h += '<p class="k-cmd" style="margin:-6px 0 10px">' + esc(p.rel + ', ' + npcRank(p) + ', age ' + p.age + '. Bond ' + Math.round(p.bond) + (chat.note ? ' (' + chat.note + ')' : '')) + '. Their replies are written by Claude, in character.</p>';
+  h += '<p class="k-cmd" style="margin:-6px 0 10px">' + esc(p.rel + ', ' + npcRank(p) + ', age ' + p.age + '. Bond ' + Math.round(p.bond) + (chat.note ? ' (' + chat.note + ')' : '')) + '. ' + (sampleFn ? 'Their replies are written by Claude, in character.' : 'Offline mode: this copy of the game can’t reach Claude, so they answer with built-in lines. The full Claude-written chat works on claude.ai.') + '</p>';
   if(chat.mode) h += '<p class="hint" style="margin:0 0 10px">' + (chat.mode === 'koto' ? 'Under Kotoamatsukami: ' + chat.turns + ' orders left.' : 'Trapped in your genjutsu: ' + chat.turns + ' questions left.') + '</p>';
   h += '<div class="chatlog" id="chatlog">' + (p.chat || []).map(function(m){ return '<div class="bub ' + (m.r === 'me' ? 'me' : m.r === 'sys' ? 'sys' : 'them') + '">' + esc(m.t) + '</div>'; }).join('') +
     (chat.busy ? '<div class="bub them" id="liveBub">' + esc(chat.live || 'Thinking…') + '</div>' : '') +
     (chat.err ? '<div class="bub sys">' + esc(chat.err) + '</div>' : '') +
     (!(p.chat || []).length && !chat.busy ? '<div class="bub sys">Say anything. ' + esc(first) + ' will answer the way they would in their world.</div>' : '') + '</div>';
   h += '<form class="chatform" id="chatForm" autocomplete="off"><input class="t" id="chatIn" maxlength="300" placeholder="Say something to ' + esc(first) + '" aria-label="Your message"' + (chat.busy ? ' disabled' : '') + '><button type="submit">' + (chat.busy ? 'Stop' : 'Send') + '</button></form>';
-  if(!(p.chat || []).length && !chat.busy) h += '<div class="starters">' + ['How have you been?','Will you train with me?','Tell me about yourself.','What do you think of the village?'].map(function(s){ return '<button type="button" data-say="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>';
+  if(CHAT_BUBBLES && !sampleFn && !chat.busy && !chat.mode) h += quickBubbles(p);
+  if((sampleFn || !CHAT_BUBBLES) && !(p.chat || []).length && !chat.busy) h += '<div class="starters">' + ['How have you been?','Will you train with me?','Tell me about yourself.','What do you think of the village?'].map(function(s){ return '<button type="button" data-say="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>';
   h += '<button class="ghost" type="button" data-back="people">Back to People</button>';
   return h;
 }
@@ -6150,6 +6642,7 @@ function sheetHelp(){
     '<p>Tap your face next to your name to customize it. Talk to anyone and Claude answers as that person, in character. Missions play a mini-game that matches the task. Find a home on the /housing_market (orphans are supported by the Kage until 18), lead your clan, join the Border Team, and ask Orochimaru for Hashirama’s cells. The Mangekyo must be earned through loss, and each one holds its own powers. Stolen Mangekyo eyes keep their owner’s powers, and an Eternal Mangekyo combines both. You can hold two different dojutsu, one per eye. The Rinnegan only awakens in someone who carries both Indra’s and Asura’s chakra. Jonin is the highest rank you can apply for, and the Kage is chosen by invitation.</p>' +
     '<p>Signature jutsu like Chidori and Rasengan can only be learned from the people who know them (Ask to teach on their card) or from scrolls they left behind (/search_for_scrolls). Hunt the nine tailed beasts to create the Ten-Tails, keep stolen eyes in your /eye_collection, talk to opponents mid-fight, and once you pass about 38 power, take on legends with /challenge_legend.</p>' +
     '<p>Fight in the Great Ninja Wars with /fight_in_war, visit or move to other villages with /travel, and ask your Kage to name you successor with /request_succession. Clan heads can meet the Kage, the elders and other clans, or stage a coup. Reincarnations of Indra or Asura can /meet_hagoromo. The Reanimation Jutsu needs the person’s remains and a living sacrifice. At about 40 power, you can wage war on a nation alone with /declare_personal_war.</p>' +
+    '<p>Change the language and turn sound effects on or off in the menu’s Settings. In the built-in chat (when Claude isn’t connected), tap a quick reply bubble to talk. You can discard past lives one at a time or all at once in Past lives.</p>' +
     '<p>Arrests come as a fight: you can resist, surrender or run. You can ask canon characters out (both of you must be 14+, adults only date adults, and teens stay within 3 years of each other). Invite people to your organization from their card. Train your children and teach them jutsu so they inherit it, and name an heir. Buy pills with /buy_supplement and use them in battle. Sealing jutsu let you seal tailed beasts; reverse sealing pulls them out of a jinchuriki.</p>' +
     '<p>People now come to you to talk. Confront the ANBU watching you with /confront_anbu. Invent jutsu by describing them with /develop_jutsu (100 Smarts or Prodigy). Find out who knows a signature jutsu at the /visit_library. Lower notoriety with /community_service or /bribe_officials, and Hatred with /visit_graves; both also fade over quiet, happy years. Running your chakra dry in a fight can leave you badly hurt.</p>' +
     '<p>The ☰ menu has the main menu, settings and quit, and the main menu holds all your saved lives. With a working Sharingan you can copy jutsu enemies use on you. The winner of a fight gets the last word. Hunt the Seven Swords of the Mist with /claim_mist_sword, decorate your home with /decorate_home, and hide or forget jutsu from the jutsu browser.</p>' +
@@ -6246,6 +6739,7 @@ function initStart(){
     if(pl){ var sv = loadSave(pl.getAttribute('data-slot-play')); if(sv){ S = normalize(sv); $('#start').hidden = true; kakashiFix(); render(); if(!S.alive) openSheet('death'); } return; }
     if(dl){ if(dl.getAttribute('data-armed')){ deleteSlot(dl.getAttribute('data-slot-del')); renderSlots(); } else { dl.setAttribute('data-armed', '1'); dl.textContent = 'Tap again to delete'; } }
   });
+  $('#langSel').value = LANG; $('#langSel').addEventListener('change', function(){ setLang(this.value); });
   $('#xferBtn').addEventListener('click', function(){ histFromStart = true; xfer = {code:'', msg:''}; $('#start').hidden = true; openSheet('transfer'); });
   $('#pastBtn').addEventListener('click', function(){ histFromStart = true; $('#start').hidden = true; openSheet('history'); });
   $('#continueBtn').addEventListener('click', function(){ var sv = loadSave(); if(sv){ S = normalize(sv); $('#start').hidden = true; kakashiFix(); render(); } });
@@ -6280,6 +6774,11 @@ function wire(){
   });
   $('#sheet').addEventListener('click', function(e){
     if(e.target.closest('[data-hist]')){ openSheet('history'); return; }
+    var lg = e.target.closest('[data-lang]'); if(lg){ if(S) save(); setLang(lg.getAttribute('data-lang')); return; }
+    var gsy = e.target.closest('[data-gcsay]'); if(gsy){ gcSend(gsy.getAttribute('data-gcsay')); return; }
+    var hd = e.target.closest('[data-hdel]'), hda = e.target.closest('[data-hdelall]');
+    if(hd || hda){ var b2 = hd || hda; if(!b2.getAttribute('data-armed')){ b2.setAttribute('data-armed', '1'); b2.textContent = 'Tap again to discard'; return; }
+      var hl = loadHistory(); if(hda) hl = []; else hl.splice(+hd.getAttribute('data-hdel'), 1); try { localStorage.setItem(HIST_KEY, JSON.stringify(hl)); } catch(er){} openSheet('history'); return; }
     var xf = e.target.closest('[data-xfer]'); if(xf){ var xa = xf.getAttribute('data-xfer');
       if(xa === 'make'){ xfer.busy = true; xfer.code = ''; xfer.msg = ''; openSheet('transfer');
         makeTransferCodeAsync().then(function(c){ xfer.busy = false; xfer.code = c; if(sheetKind === 'transfer') openSheet('transfer'); }); return; }
@@ -6299,10 +6798,11 @@ function wire(){
     if(e.target.closest('[data-small]')){ summitPick = SUMMIT_VILLAGES.filter(function(v){ return v !== S.village && leaderOf(v, year()); }); openSheet('summit'); return; }
     if(e.target.closest('[data-smstart]')){ startSummit(); return; }
     var rf = e.target.closest('[data-rkf]'); if(rf){ rkv.f = rf.getAttribute('data-rkf'); openSheet('rankings'); return; }
+    var ap = e.target.closest('[data-api]'); if(ap){ apiAction(ap.getAttribute('data-api')).then(function(){ openSheet('settings'); }); return; }
     var mn = e.target.closest('[data-menu]'); if(mn){ var mv2 = mn.getAttribute('data-menu'); if(mv2 === 'settings'){ openSheet('settings'); return; } if(mv2 === 'transfer'){ xfer = {code:'', msg:''}; openSheet('transfer'); return; } save(); closeSheet(); startScreen(); if(mv2 === 'quit') warn('Your life is saved. You can close this page any time.'); return; }
     var sb = e.target.closest('[data-sheet-back]'); if(sb){ openSheet(sb.getAttribute('data-sheet-back')); return; }
     var ss = e.target.closest('[data-set]'); if(ss){ var key = ss.getAttribute('data-set'); S.settings = S.settings || {miniGames:true};
-      if(key === 'miniGames') S.settings.miniGames = S.settings.miniGames === false; else if(key === 'ai'){ S.settings.noAI = !S.settings.noAI; sampleFn = S.settings.noAI ? null : sampleBackup; } else if(key === 'outcome') S.settings.noOutcome = !S.settings.noOutcome; else if(key.indexOf('text:') === 0){ S.settings.text = key.slice(5); applyText(); }
+      if(key === 'sfx'){ try { localStorage.setItem('ninja-life-sfx', sfxOn() ? 'off' : 'on'); } catch(er){} } else if(key === 'miniGames') S.settings.miniGames = S.settings.miniGames === false; else if(key === 'ai'){ S.settings.noAI = !S.settings.noAI; sampleFn = S.settings.noAI ? null : sampleBackup; } else if(key === 'outcome') S.settings.noOutcome = !S.settings.noOutcome; else if(key.indexOf('text:') === 0){ S.settings.text = key.slice(5); applyText(); }
       save(); openSheet('settings'); return; }
     var hc = e.target.closest('[data-hcell]'); if(hc){ var pr = myHome(); if(!pr) return; var xy = hc.getAttribute('data-hcell').split(','), x = +xy[0], y = +xy[1], fi = furnAt(pr, x, y);
       if(fi >= 0) homeSel = homeSel === fi ? null : fi; else if(homeSel != null && pr.furn[homeSel]){ pr.furn[homeSel].x = x; pr.furn[homeSel].y = y; homeSel = null; save(); }
@@ -6366,11 +6866,9 @@ if(saved && saved.v === 1){
 } else {
   startScreen();
 }
+startI18n();
 window.__ninja = {exec:exec, get S(){ return S; }, createLife:createLife, ERAS:ERAS};
 })();
 </script>
 </body>
 </html>
-
-<p>copy and paste: file:///C:/Users/andre/Downloads/Naruto%20Game%20Personal%20Project/NarutoProjectAIandJSversion.html</p>
-<p>Most recent version played link: NINJALIFE2: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</p>
